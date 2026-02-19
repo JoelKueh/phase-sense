@@ -1,4 +1,4 @@
-extern "C" void init_bodies (float4 *d_pos, float2 **d_accel, float2 **d_vel, int n);
-extern "C" void process_bodies(float4 *d_pos, float2 *d_accel, float2 *d_vel, int n, float dt, float E2);
-extern "C" void test_vbo_share(float4 *d_pos);
-extern "C" void free_bodies(float2 *d_accel, float2 *d_vel);
+extern "C" void register_gl(void **d_pos_v, int vbo);
+extern "C" void init_bodies (void *d_pos, void **d_accel, void **d_vel, int n);
+extern "C" void process_bodies(void *d_pos, void *d_accel, void *d_vel, int n, float dt, float E2);
+extern "C" void free_bodies(void *d_accel, void *d_vel);

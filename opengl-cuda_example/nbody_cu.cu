@@ -5,6 +5,7 @@
 #include <curand.h>
 #include <curand_kernel.h>
 #include <stdio.h>
+#include <cuda_gl_interop.h>
 
 #include "nbody_cu.h"
 
@@ -190,8 +191,22 @@ __global__ void init_galaxy(float4 *d_pos, float2 *d_vel, int n,
 }
 
 extern "C"
-void init_bodies(float4 *d_pos, float2 **d_accel, float2 **d_vel, int n)
+void register_gl(void **d_pos_v, int vbo)
 {
+	cudaGraphicsResource_t vbo_cr;
+	cudaGraphicsGLRegisterBuffer(&vbo_cr, vbo, cudaGraphicsRegisterFlagsNone);
+	size_t pos_size;
+	cudaGraphicsMapResources(1, &vbo_cr);
+	cudaGraphicsResourceGetMappedPointer(d_pos_v, &pos_size, vbo_cr);
+}
+
+extern "C"
+void init_bodies(void *d_pos_v, void **d_accel_v, void **d_vel_v, int n)
+{
+	float4 *d_pos = (float4 *) d_pos_v;
+	float2 **d_accel = (float2 **) d_accel_v;
+	float2 **d_vel = (float2 **) d_vel_v;
+
 	//float *h_vel = (float *) malloc(sizeof(float) * n);
 	/*for (int i = 0; i < n; i++) {
 
@@ -215,24 +230,33 @@ void init_bodies(float4 *d_pos, float2 **d_accel, float2 **d_vel, int n)
 
 	init_galaxy<<<tiles, TILE_SIZE>>>(d_pos + 2* n/3, *d_vel +2* n/3, n / 3,
 			0, 100, 70);
+	cudaDeviceSynchronize();
 }
 
+
+
 extern "C"
-void process_bodies(float4 *d_pos, float2 *d_accel, float2 *d_vel, int n, float dt, float E2)
+void process_bodies(void *d_pos_v, void *d_accel_v, void *d_vel_v, int n, float dt, float E2)
 {
+	float4 *d_pos = (float4 *) d_pos_v;
+	float2 *d_accel = (float2 *) d_accel_v;
+	float2 *d_vel = (float2 *) d_vel_v;
+
 	int tiles = (n + TILE_SIZE - 1) / TILE_SIZE;
 	find_forces<<<tiles, TILE_SIZE>>>(d_pos, d_accel, n, E2);
 
 	update<<<tiles, TILE_SIZE>>>(d_pos, d_accel, d_vel, n, dt);
+	cudaDeviceSynchronize();
 }
 
 extern "C"
-void free_bodies(float2 *d_accel, float2 *d_vel)
+void free_bodies(void *d_accel, void *d_vel)
 {
 	cudaFree(d_accel);
 	cudaFree(d_vel);
 }
 
+/*
 __global__ void test_vbo_share_kernel(float4 *d_pos)
 {
 	int i = threadIdx.x;
@@ -243,4 +267,4 @@ extern "C"
 void test_vbo_share(float4 *d_pos) {
 	test_vbo_share_kernel<<<1, 9>>>(d_pos);
 }
-
+*/

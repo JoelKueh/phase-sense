@@ -12,9 +12,9 @@
 #include <fstream>
 #include <string>
 #include <stdio.h>
-#include <cuda_runtime.h>
+/*#include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
-
+*/
 #include "nbody_cu.h"
 
 #define N_BODIES 5
@@ -164,16 +164,20 @@ int main()
 
 	glBindVertexArray(0);
 
+	/*
 	cudaGraphicsResource_t vbo_cr;
 	cudaGraphicsGLRegisterBuffer(&vbo_cr, vbo[0], cudaGraphicsRegisterFlagsNone);
-	float4 *d_pos;
+	void *d_pos;
 	size_t pos_size;
 	cudaGraphicsMapResources(1, &vbo_cr);
 	cudaGraphicsResourceGetMappedPointer((void**) &d_pos, &pos_size, vbo_cr);
+	*/
 
 
-	float2 *d_accel, *d_vel;
+	void *d_pos, *d_accel, *d_vel;
 
+
+	register_gl(&d_pos, vbo[0]);
 	init_bodies(d_pos, &d_accel, &d_vel, bodies);
 
 	//TODO
@@ -242,7 +246,6 @@ int main()
 				printf("\nresetting\n");
 				free_bodies(d_accel, d_vel);
 				init_bodies(d_pos, &d_accel, &d_vel, bodies);
-				cudaDeviceSynchronize();
 			}
 
 
@@ -264,19 +267,19 @@ int main()
 		glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
 
 		
-		float cuda_time;
+	/*	float cuda_time;
 		cudaEvent_t start, stop;
 		cudaEventCreate(&start);
 		cudaEventCreate(&stop);
 		cudaEventRecord(start, 0);
-		
+	*/	
 		process_bodies(d_pos, d_accel, d_vel, bodies, avg_render_time * t_scale, E2);
-		cudaDeviceSynchronize();
+	/*	cudaDeviceSynchronize();
 
 		cudaEventRecord(stop, 0);
 		cudaEventSynchronize(stop);
 		cudaEventElapsedTime(&cuda_time, start, stop);
-		
+	*/	
 
 
 		float t_draw_start  = SDL_GetTicks();
@@ -295,10 +298,10 @@ int main()
 		char update_title[100];
 		float time_per_frame = t_end-t_start;
 		avg_render_time = 0.98f * avg_render_time + 0.2f * time_per_frame;
-		avg_cuda_time = 0.98f * avg_cuda_time + 0.2f * cuda_time;
+		//avg_cuda_time = 0.98f * avg_cuda_time + 0.2f * cuda_time;
 		avg_draw_time = 0.98f * avg_draw_time + 0.2f * (t_draw_end - t_draw_start);
 		snprintf(update_title, 100, "%s, [Update: %3.0f ms]", window_title, avg_render_time);
-		printf("\r total update time: %3.0f ms, cuda function time: %3.0f ms, draw time: %3.0f ms", avg_render_time, avg_cuda_time, avg_draw_time);
+		printf("\r total update time: %3.0f ms, cuda function time: %3.0f ms, draw time: %3.0f ms", avg_render_time, 0, avg_draw_time);
 		SDL_SetWindowTitle(window, update_title);
 
 	}
