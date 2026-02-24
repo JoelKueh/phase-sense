@@ -16,6 +16,14 @@ int screen_height = 1200;
 
 const char *OUT_FNAME = "./out/test.mp4";
 
+// TODO: Remove me
+const GLfloat vao_centered_point[] = {
+    0.5f, 0.5, 0.0f
+};
+
+#define RES_X 1280
+#define RES_Y 720
+#define RES "RES_XxRES_Y"
 
 /**
  * @brief Runs a single simulation, rendering the output to an mp4 file.
@@ -23,53 +31,53 @@ const char *OUT_FNAME = "./out/test.mp4";
  * @param params Simulator parameters struct.
  * @return 0 on success or -1 on error.
  */
-int simulate(const char path[])
+int simulate(render_context_t *context, const char path[],
+             uint32_t res_x, uint32_t res_y)
 {
-	uint8_t frame_buf[1280][720][3];
-
-	// Open a pipe to stream the data to ffmpeg
-	ffmpeg_handle_t handle;
-	if (ffmpeg_open(&handle, "1280x720", path) == -1)
-		return -1;
+	int result = 0;
 	
-	// Write a couple of frames to ffmpeg
-	for (int i = 0; i < 120; i++) {
-		for (int j = 0; j < 1280; j++) {
-			for (int k = 0; k < 720; k++) {
-				frame_buf[j][k][0] = 0xFF;
-				frame_buf[j][k][1] = 0x00;
-				frame_buf[j][k][2] = 0x00;
-			}
-		}
-		if (ffmpeg_write(&handle, frame_buf, sizeof(frame_buf)) == -1)
-			return -1;
-
-		for (int j = 0; j < 1280; j++) {
-			for (int k = 0; k < 720; k++) {
-				frame_buf[j][k][0] = 0x00;
-				frame_buf[j][k][1] = 0xFF;
-				frame_buf[j][k][2] = 0x00;
-			}
-		}
-		if (ffmpeg_write(&handle, frame_buf, sizeof(frame_buf)) == -1)
-			return -1;
+	if (render_open_output(context, path, res_x, res_y) == -1) {
+		result = -1;
+		goto out;
+	}
+	
+    glBindBuffer(GL_ARRAY_BUFFER, context->particle_vao);
+    glBufferData(context->particle_vao, sizeof(vao_centered_point),
+                 vao_centered_point, GL_STATIC_DRAW);
+	if (render_frame(context) == -1) {
+		result = -1;
+		goto out_close_output;
 	}
 
-	// Close ffmpeg
-	if (ffmpeg_close(&handle) == -1)
-		return -1;
+out_close_output:
+	if (render_close_output(context) == -1) {
+		result = -1;
+	}
 
-	return 0;
+out:
+	return result;
 }
 
 int main()
 {
-	// Check if we can access ffmpeg.
-	// if (access(FFMPEG_PATH, X_OK) != 0) {
-	// 	std::cerr << "ERROR: ffmpeg was not found in the path" << std::endl;
-	// }
+	int result = 0;
+	render_context_t context;
+
+	if (render_init(&context) == -1) {
+		fprintf(stderr, "opengl context initialization failed\n");
+		result = 1;
+		goto out;
+	}
 	
-	if (simulate(OUT_FNAME) == -1)
-		perror("simulate");
+	if (simulate(&context, "./out/test.mp4", 1280, 720)  == -1) {
+		fprintf(stderr, "simulation error\n");
+		result = 1;
+		goto out_render_deinit;
+	}
+
+out_render_deinit:
+	render_deinit(&context);
+out:
+	return result;
 }
 

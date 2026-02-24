@@ -2,16 +2,17 @@
 
 #include "glad/glad.h"
 #include <stdlib.h>
+#include <GLFW/glfw3.h>
 
+// TODO: Should not be an array of structs. Want struct of attribute buffers.
 // TODO: Move me to somewhere shared by cuda and OpenGL
 typedef struct {
-    float x;
-    float y;
-    float z;
-    float vx;
-    float vy;
-    float vz;
-    int type;
+    GLfloat x;
+    GLfloat y;
+    GLfloat vx;
+    GLfloat vy;
+    GLfloat rot;
+    GLint type;
 } particle_t;
 
 typedef struct {
@@ -21,61 +22,56 @@ typedef struct {
 
 typedef struct {
     ffmpeg_handle_t h_ffmpeg;
-    GLuint particle_buffer;
-    GLuint frame_buf;
-    GLuint frame_buf_tex;
+    uint8_t *ffmpeg_buf;
+    uint32_t res_x;
+    uint32_t res_y;
+
+    // GLFW context
+    GLFWwindow *window;
+
+    // Particle attriube buffers
+    GLuint particle_vao;     // Particle vertex array object.
+    GLuint particle_vbo;     // Particle vertex buffer object.
+    GLuint particle_pos;     // Probably a ubo window to the vao.
+    GLuint particle_vel;     // Particle velocities.
+    GLuint particle_types;   // Particle types.
+    GLuint particle_tree;    // Particle quad tree?
 
     // First pass: Take input particle positions and pass them to the geometry
     // shader to create vertices along the particle boundaries.
-    GLuint render_program;
-    GLuint render_vert;
-    GLuint render_geometry;
-    GLuint render_frag;
+    GLuint particle_program;
 
     // Second pass: Point Spreading Function for microscope optics.
     GLuint psf_program;
-    GLuint psf_vert;
-    GLuint psf_frag;
 
     // Third pass: Motion blur? Discoloration?
+    // TODO: This might be done at least partly in the particle_program.
+    // GPU Gems 3 Chapter 27 talks about storing motion blur data in the depth
+    // buffer (see https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-27-motion-blur-post-processing-effect).
 } render_context_t;
 
-#define RES_X 1280
-#define RES_Y 720
-#define RES "RES_XxRES_Y"
-
 /**
- * @brief Launches ffmpeg to handle a video stream.
- * @param handle Populated with info to interface with subprocess.
- * @param resolution Resolution string passed to ffmpeg (e.g., 1280x720)
+ * @brief Initializes the render pipeline.
+ * @param context A renderer context that can be used later.
  * @return 0 on success or -1 on error.
  */
-int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
-                const char *const fname);
-
-/**
- * @brief Writes a buffer to ffmpeg over a pipe.
- * @param handle Populated with info to interface with subprocess.
- * @param buf The buffer to write.
- * @param sz The size to write.
- * @return 0 on success or -1 on error.
- */
-int ffmpeg_write(ffmpeg_handle_t *handle, void *const buf, size_t sz);
-
-/**
- * @breif Closes ffmpeg and waits for it to exit.
- * @param handle The handle to the ffmpeg instance.
- * @return 0 on success or -1 on error.
- */
-int ffmpeg_close(ffmpeg_handle_t *handle);
+int render_init(render_context_t *context);
 
 /**
  * @brief Initializes the render pipeline to feed data to out_path.
- * @param context A renderer context that can be used later.
+ * @param context The render context to use.
  * @param out_path File path that the simulation should output to.
  * @return 0 on success or -1 on error.
  */
-int render_init(render_context_t *context, char *const out_path);
+int render_open_output(render_context_t *context, const char fname[],
+                       uint32_t res_x, uint32_t res_y);
+
+/**
+ * @brief Closes ffmpeg and frees up resources so that the pipeline can
+ * be reconfigured to output to a different file.
+ * @param context The render context.
+ */
+int render_close_output(render_context_t *context);
 
 /**
  * @brief Renderes a frame and encodes it using ffmpeg.
@@ -83,11 +79,10 @@ int render_init(render_context_t *context, char *const out_path);
  * @param part_buf Particle buffer holding the current state or the sim.
  * @return 0 on success or -1 on error.
  */
-int render_frame(render_context_t *context, particle_t *part_buf);
+int render_frame(render_context_t *context);
 
 /**
  * @brief Frees all resources associated with a render context.
  * @param context The render context to free.
- * @return 0 on success or -1 on error.
  */
-int render_deinit(render_context_t *context)
+void render_deinit(render_context_t *context);

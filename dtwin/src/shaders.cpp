@@ -1,6 +1,6 @@
 
 // Do-nothing vertex shader.
-const char *vtx_src_nop = R"(
+extern const char vert_src_nop[] = R"(
 #version 430 core
 layout (location = 0) in vec2 aPos;
 layout (location = 1) in float aRot;
@@ -18,7 +18,7 @@ void main()
 )";
 
 // Vertex shader that instantiates a quad that covers the whole screen.
-const char *vtx_src_quad = R"(
+extern const char vert_src_quad[] = R"(
 #version 430 core
 out vec2 uv;
 
@@ -33,7 +33,7 @@ void main()
 // Particle instantiation geometry shader.
 // TODO: Have this read from a UBO for particle shapes.
 // - Currently it just renders squares.
-const char *geom_src_particles = R"(
+extern const char geom_src_particles[] = R"(
 #version 430 core
 layout (points) in;
 layout (triangle_strip, max_vertices = 16) out;
@@ -56,7 +56,7 @@ void main()
 )";
 
 // Particle instantiation fragment shader.
-const char *frag_src_particles = R"(
+extern const char frag_src_particles[] = R"(
 #version 430 core
 out vec3 FragColor;
 

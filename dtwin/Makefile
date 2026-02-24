@@ -7,7 +7,7 @@ BIN_DIR=bin
 SRC_DIR=src
 
 INCLUDE_DIRS= -I/usr/local/cuda/include -I./src -I./glad/include -I./glm
-LD_FLAGS = -lGL -ldl
+LD_FLAGS = -lGL -ldl -lglfw
 CUDA_LD_FLAGS = -L/usr/local/cuda/lib64 -lcudart -L./bin -lnbody_cu
 
 .PHONY: default clean_all clean debug
@@ -19,7 +19,8 @@ debug: default
 
 CFLAGS = $(INCLUDE_DIRS) $(LD_FLAGS) $(OPT_LEVEL) -std=c++11
 
-DTWIN_SRCS = $(SRC_DIR)/dtwin.cpp
+DTWIN_SRCS = $(SRC_DIR)/dtwin.cpp $(SRC_DIR)/shaders.cpp \
+	$(SRC_DIR)/render.cpp
 DTWIN_OBJS = $(DTWIN_SRCS:src/%.cpp=obj/%.o)
 DTWIN_DEPS = $(DTWIN_OBJS:%.o=%.d)
 -include $(DTWIN_DEPS)
