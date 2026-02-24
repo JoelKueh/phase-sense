@@ -27,7 +27,7 @@ DTWIN_DEPS = $(DTWIN_OBJS:%.o=%.d)
 
 obj/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
-	g++ $(CFLAGS) -MMD -MP -MF $(@:.o=.d) -c -o $@ $< 
+	g++ -MMD -MP -MF $(@:.o=.d) -c -o $@ $< $(CFLAGS) 
 
 $(BIN_DIR)/libnbody_cu.a: src/nbody_cu.cu
 	nvcc -rdc=true -c -o ./$(OBJ_DIR)/temp.o ./$(SRC_DIR)/nbody_cu.cu $(INCLUDE_DIRS) -O2 -gencode=arch=compute_86,code=\"sm_86\"
@@ -39,7 +39,7 @@ $(BIN_DIR)/libnbody_cu.a: src/nbody_cu.cu
 $(BIN_DIR)/dtwin: obj/dtwin.o $(DTWIN_OBJS) $(BIN_DIR)/libnbody_cu.a
 	@mkdir -p $(dir $@)
 	@mkdir -p $(OUT_DIR)
-	g++ $(CFLAGS) $(CUDA_LD_FLAGS) -o $@ glad/src/glad.c $(DTWIN_OBJS)
+	g++ $(CUDA_LD_FLAGS) -o $@ glad/src/glad.c $(DTWIN_OBJS) $(CFLAGS) 
 
 clean_all: clean
 	rm -rf ./$(OUT_DIR)/*

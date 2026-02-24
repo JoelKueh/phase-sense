@@ -152,10 +152,14 @@ out:
     return result;
 }
 
-int render_init(render_context_t *context) {
+int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
     int result = 0;
 
+    context->res_x = res_x;
+    context->res_y = res_y;
+
     // Create the GLFW context with no no visible window.
+    glfwInit();
     glfwSetErrorCallback(glfw_error_callback);
     glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
     if (!glfwInit()) {
@@ -163,8 +167,14 @@ int render_init(render_context_t *context) {
         goto err;
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    context->window = glfwCreateWindow(res_x, res_y, "phase-sense", NULL, NULL);
+    if (!context->window)
+        goto err_close_glfw;
+    glfwMakeContextCurrent(context->window);
+    gladLoadGL();
 
     // PASS 1: Geometry Shader
     glGenVertexArrays(1, &context->particle_vao);
@@ -187,6 +197,9 @@ int render_init(render_context_t *context) {
         goto err_close_glfw;
     }
 
+    // Skip the termination on error.
+    goto out;
+
 err_close_glfw:
     glfwTerminate();
 err:
@@ -196,16 +209,15 @@ out:
     return 0;
 }
 
-int render_open_output(render_context_t *context, const char fname[],
-                       uint32_t res_x, uint32_t res_y) {
+int render_open_output(render_context_t *context, const char fname[]) {
     char res_buf[16] = "";
 
-    context->res_x = res_x;
-    context->res_y = res_y;
-    if ((context->ffmpeg_buf = (uint8_t*)malloc(res_x * res_y * 4)) == 0)
+    if ((context->ffmpeg_buf =
+            (uint8_t*)malloc(context->res_x * context->res_y * 4)) == 0)
         return -1;
 
-    snprintf(res_buf, sizeof(res_buf), "%dx%d", res_y, res_x);
+    snprintf(res_buf, sizeof(res_buf), "%dx%d",
+             context->res_x, context->res_y);
     if (ffmpeg_open(&context->h_ffmpeg, res_buf, fname) == -1)
         return -1;
 
@@ -220,6 +232,7 @@ int render_close_output(render_context_t *context) {
 int render_frame(render_context_t *context) {
     // Prepare the rendering buffer.
     glViewport(0, 0, context->res_x, context->res_y);
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     // PASS 1: Particle instantiation
@@ -231,9 +244,11 @@ int render_frame(render_context_t *context) {
     // TODO
 
     // Read the buffer back from the GPU and write it to ffmpeg.
+    glReadBuffer(GL_BACK);
     glFinish();
-    glReadPixels(0, 0, context->res_x, context->res_y, GL_RGBA, GL_BYTE,
-                 context->ffmpeg_buf);
+    memset(context->ffmpeg_buf, 0xFF, context->res_x * context->res_y * 4);
+    glReadPixels(0, 0, context->res_x, context->res_y, GL_RGBA,
+                 GL_UNSIGNED_BYTE, context->ffmpeg_buf);
     if (ffmpeg_write(&context->h_ffmpeg, context->ffmpeg_buf,
                      context->res_x * context->res_y * 4) == -1)
         return -1;

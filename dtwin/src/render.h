@@ -55,7 +55,8 @@ typedef struct {
  * @param context A renderer context that can be used later.
  * @return 0 on success or -1 on error.
  */
-int render_init(render_context_t *context);
+int render_init(render_context_t *context,
+                uint32_t res_x, uint32_t res_y);
 
 /**
  * @brief Initializes the render pipeline to feed data to out_path.
@@ -63,8 +64,7 @@ int render_init(render_context_t *context);
  * @param out_path File path that the simulation should output to.
  * @return 0 on success or -1 on error.
  */
-int render_open_output(render_context_t *context, const char fname[],
-                       uint32_t res_x, uint32_t res_y);
+int render_open_output(render_context_t *context, const char fname[]);
 
 /**
  * @brief Closes ffmpeg and frees up resources so that the pipeline can

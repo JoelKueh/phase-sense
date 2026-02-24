@@ -3,15 +3,18 @@
 extern const char vert_src_nop[] = R"(
 #version 430 core
 layout (location = 0) in vec2 aPos;
-layout (location = 1) in float aRot;
-layout (location = 2) in int aPartIdx;
+layout (location = 1) in vec2 aVel;
+layout (location = 2) in float aRot;
+layout (location = 3) in int aPartIdx;
 
-flat out vRot;
-flat out vPartIdx;
+out vec2 vVel;
+out float vRot;
+out int vPartIdx;
 
 void main()
 {
     gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);
+    vVel = aVel;
     vRot = aRot;
     vPartIdx = aPartIdx;
 }
@@ -38,18 +41,18 @@ extern const char geom_src_particles[] = R"(
 layout (points) in;
 layout (triangle_strip, max_vertices = 16) out;
 
-const vec2 OFFSETS[4] = vec2[]{
+const vec2 OFFSETS[4] = vec2[](
     vec2(-0.5, -0.5),
     vec2( 0.5, -0.5),
-    vee2(-0.5,  0.5),
+    vec2(-0.5,  0.5),
     vec2( 0.5,  0.5)
-};
+);
 
 void main()
 {
     for (int i = 0; i < 4; i++) {
         gl_Position = gl_in[0].gl_Position + vec4(OFFSETS[i], 0.0, 0.0);
-        EmitVeretx();
+        EmitVertex();
     }
     EndPrimitive();
 }
