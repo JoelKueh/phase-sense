@@ -1,17 +1,16 @@
 #pragma once
 
 #include "glad/glad.h"
+#include <glm/glm.hpp>
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
 
 // TODO: Should not be an array of structs. Want struct of attribute buffers.
 // TODO: Move me to somewhere shared by cuda and OpenGL
 typedef struct {
-    GLfloat x;
-    GLfloat y;
-    GLfloat vx;
-    GLfloat vy;
-    GLfloat rot;
+    glm::vec2 position;
+    glm::vec2 velocity;
+    GLfloat rotation;
     GLint type;
 } particle_t;
 
