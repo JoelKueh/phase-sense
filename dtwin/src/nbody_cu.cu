@@ -1,4 +1,3 @@
-
 #define TILE_SIZE 1024
 
 #include <cuda.h>
@@ -192,13 +191,21 @@ __global__ void init_galaxy(float4 *d_pos, float2 *d_vel, int n,
 }
 
 extern "C"
-void register_gl(void **d_pos_v, int vbo)
+cu_context_t register_gl(int vbo, int ppv, int n)
 {
+
+	cu_context_t ret;
+
+	ret.ppv = ppv;
+	ret.n = n;
+
 	cudaGraphicsResource_t vbo_cr;
 	cudaGraphicsGLRegisterBuffer(&vbo_cr, vbo, cudaGraphicsRegisterFlagsNone);
 	size_t pos_size;
 	cudaGraphicsMapResources(1, &vbo_cr);
-	cudaGraphicsResourceGetMappedPointer(d_pos_v, &pos_size, vbo_cr);
+	cudaGraphicsResourceGetMappedPointer(&(ret.d_vbo), &pos_size, vbo_cr);
+
+	return cu_context_t;
 }
 
 extern "C"
