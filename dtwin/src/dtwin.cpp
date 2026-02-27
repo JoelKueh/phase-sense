@@ -71,7 +71,7 @@ int main()
 	int result = 0;
 	render_context_t context;
 
-	if (render_init(&context, 1280, 760) == -1) {
+	if (render_init(&context, screen_width, screen_height) == -1) {
 		fprintf(stderr, "opengl context initialization failed\n");
 		result = 1;
 		goto out;

@@ -25,16 +25,19 @@ typedef struct {
     uint32_t res_x;
     uint32_t res_y;
 
-    // GLFW context
+    // GLFW context and buffer outputs
     GLFWwindow *window;
+    GLuint inst_frame_buf;
+    GLuint inst_out_tex;
+    GLuint inst_vel_tex;
+    GLuint draw_frame_bufs[2];
+    GLuint draw_out_texs[2];
 
     // Particle attriube buffers
     GLuint particle_vao;     // Particle vertex array object.
     GLuint particle_vbo;     // Particle vertex buffer object.
-    GLuint particle_pos;     // Probably a ubo window to the vao.
-    GLuint particle_vel;     // Particle velocities.
-    GLuint particle_types;   // Particle types.
     GLuint particle_tree;    // Particle quad tree?
+    GLuint empty_vao;        // Empty vao for a fullscreen quad.
 
     // First pass: Take input particle positions and pass them to the geometry
     // shader to create vertices along the particle boundaries.

@@ -44,6 +44,7 @@ layout (triangle_strip, max_vertices = 16) out;
 flat in vec2 vVel[];
 flat in float vRot[];
 flat in int vPartIdx[];
+flat out vec2 fVel;
 
 const vec2 OFFSETS[4] = vec2[](
     vec2(-0.05, -0.01),
@@ -61,6 +62,7 @@ void main()
 
     for (int i = 0; i < 4; i++) {
         gl_Position = gl_in[0].gl_Position + vec4(rot * OFFSETS[i], 0.0, 0.0);
+        fVel = vVel[0];
         EmitVertex();
     }
     EndPrimitive();
@@ -70,10 +72,27 @@ void main()
 // Particle instantiation fragment shader.
 extern const char frag_src_particles[] = R"(
 #version 430 core
-out vec3 FragColor;
+layout (location = 0) out vec3 FragColor;
+layout (location = 1) out vec2 FragVelocity;
+
+flat in vec2 fVel;
 
 void main()
 {
     FragColor = vec3(0.6, 0.2, 0.2);
+    FragVelocity = fVel;
 }
+)";
+
+// Gaussian blur fragment shader.
+extern const char frag_src_blur[] = R"(
+#version 430 core
+
+in vec2 uv;
+out vec4 gl_FragColor;
+
+void main()
+{
+    gl_FragColor=vec4(uv, 0.0, 1.0);
+} 
 )";
