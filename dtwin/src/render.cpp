@@ -40,8 +40,8 @@ int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
     } else if (handle->pid == 0) {
         close(handle->pipefds[1]);
         dup2(handle->pipefds[0], STDIN_FILENO);
-        execlp(FFMPEG_PATH, FFMPEG_PATH, "-f", "rawvideo", "-pix_fmt", "rgba",
-               "-framerate", "4", "-s", resolution, "-i", "-", fname);
+        execlp(FFMPEG_PATH, FFMPEG_PATH, "-loglevel", "quiet", "-f", "rawvideo", "-pix_fmt",
+               "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname);
         perror("execlp");
         fprintf(stderr, "Is ffmpeg in the path?\n");
         exit(-1);
@@ -188,22 +188,24 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
     // Create the particle instantiation output texture
     glGenTextures(1, &context->inst_out_tex);
     glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->res_x, context->res_y, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->res_x, context->res_y, 0,
-                 GL_RGBA8, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
     // Create the particle instantiation velocity texture
     glGenTextures(1, &context->inst_vel_tex);
     glBindTexture(GL_TEXTURE_2D, context->inst_vel_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, context->res_x, context->res_y, 0,
+                 GL_RG, GL_HALF_FLOAT, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, context->res_x, context->res_y, 0,
-                 GL_RG16F, GL_HALF_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
     // Create the particle instantiation framebuffer
     glGenFramebuffers(1, &context->inst_frame_buf);
@@ -222,12 +224,13 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
     glGenTextures(2, context->draw_out_texs);
     for (int i = 0; i < 2; i++) {
         glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->res_x, context->res_y, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->res_x, context->res_y, 0,
-                     GL_RGBA8, GL_UNSIGNED_BYTE, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     }
 
     // Create the draw framebuffer
@@ -304,6 +307,8 @@ int render_close_output(render_context_t *context) {
 }
 
 int render_frame(render_context_t *context) {
+    GLuint loc_resolution, loc_radius, loc_dir;
+    
     // Prepare the rendering buffer.
     glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
     glViewport(0, 0, context->res_x, context->res_y);
@@ -315,22 +320,35 @@ int render_frame(render_context_t *context) {
     glBindVertexArray(context->particle_vao);
     glDrawArrays(GL_POINTS, 0, 50);
 
-    // PASS 2: PSF Blurring
+    // PASS 2: Horrizontal PSF Blurring (SPLIT ONLY WORKS BECAUSE GAUSIAN)
     glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[0]);
     glViewport(0, 0, context->res_x, context->res_y);
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(context->psf_program);
+    loc_resolution = glGetUniformLocation(context->psf_program, "resolution");
+    loc_radius = glGetUniformLocation(context->psf_program, "radius");
+    loc_dir = glGetUniformLocation(context->psf_program, "dir");
+    glUniform1f(loc_resolution, context->res_x);
+    glUniform1f(loc_radius, 5);
+    glUniform2f(loc_dir, 1.0, 0.0);
+    glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    // PASS 3: Vertical PSF Blurring
+    glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[1]);
+    glViewport(0, 0, context->res_x, context->res_y);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glUniform2f(loc_dir, 0.0, 1.0);
+    glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[0]);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
       
     // Read the buffer back from the GPU and write it to ffmpeg.
+    // glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glFinish();
     memset(context->ffmpeg_buf, 0xFF, context->res_x * context->res_y * 4);
-    // glReadPixels(0, 0, context->res_x, context->res_y, GL_RGBA,
-    //              GL_UNSIGNED_BYTE, context->ffmpeg_buf);
-    glReadPixels(0, 0, context->res_x, context->res_y, GL_RG,
-                 GL_HALF_FLOAT, context->ffmpeg_buf);
+    glReadPixels(0, 0, context->res_x, context->res_y, GL_RGBA,
+                 GL_UNSIGNED_BYTE, context->ffmpeg_buf);
     if (ffmpeg_write(&context->h_ffmpeg, context->ffmpeg_buf,
                      context->res_x * context->res_y * 4) == -1)
         return -1;

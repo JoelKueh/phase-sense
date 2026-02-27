@@ -85,14 +85,86 @@ void main()
 )";
 
 // Gaussian blur fragment shader.
+// extern const char frag_src_blur[] = R"(
+// #version 430 core
+
+// in vec2 uv;
+// out vec4 FragColor;
+// uniform sampler2D tex;
+
+// const float WEIGHTS[25] = float[](
+//     1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0,
+//     1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0,
+//     1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0,
+//     1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0,
+//     1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0, 1.0/25.0
+// );
+
+// const ivec2 OFFSETS[25] = ivec2[](
+//     vec2(-2, 2), vec2(-1, 2), vec2( 0, 2), vec2( 1, 2), vec2( 2, 2),  
+//     vec2(-2, 1), vec2(-1, 1), vec2( 0, 1), vec2( 1, 1), vec2( 2, 1),  
+//     vec2(-2, 0), vec2(-1, 0), vec2( 0, 0), vec2( 1, 0), vec2( 2, 0),  
+//     vec2(-2,-1), vec2(-1,-1), vec2( 0,-1), vec2( 1,-1), vec2( 2,-1),  
+//     vec2(-2,-2), vec2(-1,-2), vec2( 0,-2), vec2( 1,-2), vec2( 2,-2),  
+// );
+
+// void main()
+// {
+//     int i, j;
+//     vec3 color;
+//     for (i = 0; i < 5; i++) {
+//         for (j = 0; j < 5; j++) {
+//             color += WEIGHTS[i*5 + j] * 
+//         }
+//     }
+//     FragColor=vec4(, 1.0);
+// } 
+
+// Credit to:
+// https://github.com/mattdesl/lwjgl-basics/wiki/ShaderLesson5
 extern const char frag_src_blur[] = R"(
 #version 430 core
-
+out vec4 FragColor;
 in vec2 uv;
-out vec4 gl_FragColor;
 
-void main()
-{
-    gl_FragColor=vec4(uv, 0.0, 1.0);
-} 
+uniform sampler2D u_texture;
+uniform float resolution;
+uniform float radius;
+uniform vec2 dir;
+
+void main() {
+	//this will be our RGBA sum
+	vec4 sum = vec4(0.0);
+	
+	//our original texcoord for this fragment
+	vec2 tc = uv;
+	
+	//the amount to blur, i.e. how far off center to sample from 
+	//1.0 -> blur by one pixel
+	//2.0 -> blur by two pixels, etc.
+	float blur = radius/resolution; 
+    
+	//the direction of our blur
+	//(1.0, 0.0) -> x-axis blur
+	//(0.0, 1.0) -> y-axis blur
+	float hstep = dir.x;
+	float vstep = dir.y;
+    
+	//apply blurring, using a 9-tap filter with predefined gaussian weights
+    
+	sum += texture(u_texture, vec2(tc.x - 4.0*blur*hstep, tc.y - 4.0*blur*vstep)) * 0.0162162162;
+	sum += texture(u_texture, vec2(tc.x - 3.0*blur*hstep, tc.y - 3.0*blur*vstep)) * 0.0540540541;
+	sum += texture(u_texture, vec2(tc.x - 2.0*blur*hstep, tc.y - 2.0*blur*vstep)) * 0.1216216216;
+	sum += texture(u_texture, vec2(tc.x - 1.0*blur*hstep, tc.y - 1.0*blur*vstep)) * 0.1945945946;
+	
+	sum += texture(u_texture, vec2(tc.x, tc.y)) * 0.2270270270;
+	
+	sum += texture(u_texture, vec2(tc.x + 1.0*blur*hstep, tc.y + 1.0*blur*vstep)) * 0.1945945946;
+	sum += texture(u_texture, vec2(tc.x + 2.0*blur*hstep, tc.y + 2.0*blur*vstep)) * 0.1216216216;
+	sum += texture(u_texture, vec2(tc.x + 3.0*blur*hstep, tc.y + 3.0*blur*vstep)) * 0.0540540541;
+	sum += texture(u_texture, vec2(tc.x + 4.0*blur*hstep, tc.y + 4.0*blur*vstep)) * 0.0162162162;
+
+	//discard alpha for our simple demo, multiply by vertex color and return
+	FragColor = vec4(sum.rgb, 1.0);
+}
 )";
