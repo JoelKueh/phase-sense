@@ -7,9 +7,9 @@ layout (location = 1) in vec2 aVel;
 layout (location = 2) in float aRot;
 layout (location = 3) in int aPartIdx;
 
-out vec2 vVel;
-out float vRot;
-out int vPartIdx;
+flat out vec2 vVel;
+flat out float vRot;
+flat out int vPartIdx;
 
 void main()
 {
@@ -41,17 +41,26 @@ extern const char geom_src_particles[] = R"(
 layout (points) in;
 layout (triangle_strip, max_vertices = 16) out;
 
+flat in vec2 vVel[];
+flat in float vRot[];
+flat in int vPartIdx[];
+
 const vec2 OFFSETS[4] = vec2[](
-    vec2(-0.5, -0.5),
-    vec2( 0.5, -0.5),
-    vec2(-0.5,  0.5),
-    vec2( 0.5,  0.5)
+    vec2(-0.05, -0.01),
+    vec2( 0.05, -0.01),
+    vec2(-0.05,  0.01),
+    vec2( 0.05,  0.01)
 );
 
 void main()
 {
+    const mat2 rot = mat2(
+        cos(vRot[0]), -sin(vRot[0]),
+        sin(vRot[0]),  cos(vRot[0])
+    );
+
     for (int i = 0; i < 4; i++) {
-        gl_Position = gl_in[0].gl_Position + vec4(OFFSETS[i], 0.0, 0.0);
+        gl_Position = gl_in[0].gl_Position + vec4(rot * OFFSETS[i], 0.0, 0.0);
         EmitVertex();
     }
     EndPrimitive();

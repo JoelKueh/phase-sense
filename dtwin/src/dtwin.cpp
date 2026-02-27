@@ -9,17 +9,13 @@
 #include <iostream>
 #include <cstdint>
 #include <cstring>
+#include <random>
 
 float timePast = 0;
 int screen_width = 1200;
 int screen_height = 1200;
 
 const char *OUT_FNAME = "./out/test.mp4";
-
-// TODO: Remove me
-const GLfloat vao_centered_point[] = {
-    0.5f, 0.5, 0.0f
-};
 
 /**
  * @brief Runs a single simulation, rendering the output to an mp4 file.
@@ -29,20 +25,37 @@ const GLfloat vao_centered_point[] = {
  */
 int simulate(render_context_t *context, const char path[])
 {
+	particle_t buf[50];
 	int result = 0;
 	
 	if (render_open_output(context, path) == -1) {
 		result = -1;
 		goto out;
 	}
-	
-    glBindBuffer(GL_ARRAY_BUFFER, context->particle_vao);
-    glBufferData(context->particle_vao, sizeof(vao_centered_point),
-                 vao_centered_point, GL_STATIC_DRAW);
-	if (render_frame(context) == -1) {
-		result = -1;
-		goto out_close_output;
+
+	for (int i = 0; i < 50; i++) {
+		buf[i].position.x = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
+		buf[i].position.y = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
+		buf[i].velocity.x = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
+		buf[i].velocity.y = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
+		buf[i].rotation = (float)std::rand() / (float)RAND_MAX * 2 * M_PI;
+		buf[i].type = 0;
+		// buf[i].position.x = 0.5;
+		// buf[i].position.y = 0.5;
+		// buf[i].velocity.x = 0.5;
+		// buf[i].velocity.y = 0.5;
+		// buf[i].rotation = 0.25;
+		// buf[i].type = 0;
 	}
+    glBindBuffer(GL_ARRAY_BUFFER, context->particle_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(buf),
+                 buf, GL_STATIC_DRAW);
+    for (int i = 0; i < 50; i++) {
+		if (render_frame(context) == -1) {
+			result = -1;
+			goto out_close_output;
+		}
+    }
 
 out_close_output:
 	if (render_close_output(context) == -1) {

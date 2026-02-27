@@ -40,7 +40,7 @@ int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
         close(handle->pipefds[1]);
         dup2(handle->pipefds[0], STDIN_FILENO);
         execlp(FFMPEG_PATH, FFMPEG_PATH, "-f", "rawvideo", "-pix_fmt", "rgba",
-               "-s", resolution, "-i", "-", fname);
+               "-framerate", "4", "-s", resolution, "-i", "-", fname);
         perror("execlp");
         fprintf(stderr, "Is ffmpeg in the path?\n");
         exit(-1);
@@ -178,20 +178,21 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
 
     // PASS 1: Geometry Shader
     glGenVertexArrays(1, &context->particle_vao);
+    glGenBuffers(1, &context->particle_vbo);
     glBindVertexArray(context->particle_vao);
     glBindBuffer(GL_ARRAY_BUFFER, context->particle_vbo);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
-                          sizeof(particle_t), (GLvoid*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, position));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
-                          sizeof(particle_t), (GLvoid*)(2 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, velocity));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE,
-                          sizeof(particle_t), (GLvoid*)(4 * sizeof(GLfloat)));
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, rotation));
     glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 1, GL_INT, GL_FALSE,
-                          sizeof(particle_t), (GLvoid*)(5 * sizeof(GLfloat)));
+    glVertexAttribIPointer(3, 1, GL_INT, sizeof(particle_t),
+                           (GLvoid*)offsetof(particle_t, type));
     if (compile_shader_program(&context->particle_program, vert_src_nop,
                                geom_src_particles, frag_src_particles)) {
         goto err_close_glfw;
@@ -237,8 +238,8 @@ int render_frame(render_context_t *context) {
 
     // PASS 1: Particle instantiation
     glUseProgram(context->particle_program);
-    glBindBuffer(GL_ARRAY_BUFFER, context->particle_vao);
-    glDrawArrays(GL_POINTS, 0, 1);
+    glBindVertexArray(context->particle_vao);
+    glDrawArrays(GL_POINTS, 0, 50);
 
     // PASS 2: PSF Blurring
     // TODO
