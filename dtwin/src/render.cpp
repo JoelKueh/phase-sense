@@ -312,7 +312,7 @@ int render_frame(render_context_t *context) {
     // Prepare the rendering buffer.
     glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
     glViewport(0, 0, context->res_x, context->res_y);
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClearColor(0.318f, 0.314f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     // PASS 1: Particle instantiation

@@ -47,10 +47,10 @@ flat in int vPartIdx[];
 flat out vec2 fVel;
 
 const vec2 OFFSETS[4] = vec2[](
-    vec2(-0.05, -0.01),
-    vec2( 0.05, -0.01),
-    vec2(-0.05,  0.01),
-    vec2( 0.05,  0.01)
+    vec2(-0.20, -0.01),
+    vec2( 0.20, -0.01),
+    vec2(-0.20,  0.01),
+    vec2( 0.20,  0.01)
 );
 
 void main()
@@ -72,14 +72,14 @@ void main()
 // Particle instantiation fragment shader.
 extern const char frag_src_particles[] = R"(
 #version 430 core
-layout (location = 0) out vec3 FragColor;
+layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec2 FragVelocity;
 
 flat in vec2 fVel;
 
 void main()
 {
-    FragColor = vec3(0.6, 0.2, 0.2);
+    FragColor = vec4(0.0, 0.0, 0.0, 0.5);
     FragVelocity = fVel;
 }
 )";
