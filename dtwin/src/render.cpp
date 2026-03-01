@@ -11,12 +11,18 @@
 
 const char *FFMPEG_PATH = "ffmpeg";
 
-// Shader definitions in src/shaders.cpp
-extern const char vert_src_nop[];
-extern const char vert_src_quad[];
-extern const char geom_src_particles[];
-extern const char frag_src_particles[];
-extern const char frag_src_blur[];
+// Shader definitions in src/shaders.cpp created by xxd
+extern const char inst_vert_glsl[];
+extern const char inst_geom_glsl[];
+extern const char inst_frag_glsl[];
+extern const char quad_vert_glsl[];
+extern const char gaus_frag_glsl[];
+
+extern const int inst_vert_glsl_len;
+extern const int inst_geom_glsl_len;
+extern const int inst_frag_glsl_len;
+extern const int quad_vert_glsl_len;
+extern const int gaus_frag_glsl_len;
 
 static void glfw_error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
@@ -76,8 +82,10 @@ int ffmpeg_close(ffmpeg_handle_t *handle) {
     return 0;
 }
 
-int compile_shader_program(GLuint *program, const char vert_src[],
-                           const char geom_src[], const char frag_src[]) {
+int compile_shader_program(GLuint *program,
+                           const char vert_src[], int vert_len,
+                           const char geom_src[], int geom_len,
+                           const char frag_src[], int frag_len) {
     int result = 0;
     int success;
     char info_log[512];
@@ -88,7 +96,7 @@ int compile_shader_program(GLuint *program, const char vert_src[],
 
     // Create the vertex shader
     vert_shader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vert_shader, 1, &vert_src, NULL);
+	glShaderSource(vert_shader, 1, &vert_src, &frag_len);
 	glCompileShader(vert_shader);
 	glGetShaderiv(vert_shader, GL_COMPILE_STATUS, &success);
 	if (!success) {
@@ -101,7 +109,7 @@ int compile_shader_program(GLuint *program, const char vert_src[],
 	// Create the geometry shader
 	if (geom_src != nullptr) {
         geom_shader = glCreateShader(GL_GEOMETRY_SHADER);
-	    glShaderSource(geom_shader, 1, &geom_src, NULL);
+	    glShaderSource(geom_shader, 1, &geom_src, &geom_len);
 	    glCompileShader(geom_shader);
 	    glGetShaderiv(geom_shader, GL_COMPILE_STATUS, &success);
 	    if (!success) {
@@ -114,7 +122,7 @@ int compile_shader_program(GLuint *program, const char vert_src[],
 
 	// Create the fragment shader
 	frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(frag_shader, 1, &frag_src, NULL);
+	glShaderSource(frag_shader, 1, &frag_src, &vert_len);
 	glCompileShader(frag_shader);
 	glGetShaderiv(frag_shader, GL_COMPILE_STATUS, &success);
 	if (!success) {
@@ -263,14 +271,19 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
     glEnableVertexAttribArray(3);
     glVertexAttribIPointer(3, 1, GL_INT, sizeof(particle_t),
                            (GLvoid*)offsetof(particle_t, type));
-    if (compile_shader_program(&context->particle_program, vert_src_nop,
-                               geom_src_particles, frag_src_particles)) {
+    if (compile_shader_program(&context->particle_program,
+                               inst_vert_glsl, inst_vert_glsl_len,
+                               inst_geom_glsl, inst_geom_glsl_len,
+                               inst_frag_glsl, inst_frag_glsl_len)) {
         goto err_close_glfw;
     }
 
     // PASS 2: Blurring Kernel
     glGenVertexArrays(1, &context->empty_vao);
-    if (compile_shader_program(&context->psf_program, vert_src_quad, nullptr, frag_src_blur)) {
+    if (compile_shader_program(&context->psf_program,
+                               quad_vert_glsl, quad_vert_glsl_len,
+                               nullptr, 0,
+                               gaus_frag_glsl, gaus_frag_glsl_len)) {
         goto err_close_glfw;
     }
 
