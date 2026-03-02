@@ -9,6 +9,51 @@
 
 #include "nbody_cu.h"
 
+
+__global__ void find_forces(cu_context_t ctx);
+__global__ void update(cu_context_t ctx, float dt);
+
+
+extern "C"
+void cuda_update(cu_context_t ctx, float dt)
+{
+
+	int tiles = (ctx.n + TILE_SIZE - 1) / TILE_SIZE;
+	find_forces<<<tiles, TILE_SIZE>>>(ctx);
+
+	update<<<tiles, TILE_SIZE>>>(ctx, dt);
+	cudaDeviceSynchronize();
+}
+
+extern "C"
+cu_context_t register_gl(int vbo, int ppv, int n)
+{
+
+	cu_context_t ret;
+
+	ret.ppv = ppv;
+	ret.n = n;
+
+	cudaGraphicsResource_t vbo_cr;
+	cudaGraphicsGLRegisterBuffer(&vbo_cr, vbo, cudaGraphicsRegisterFlagsNone);
+	size_t pos_size;
+	cudaGraphicsMapResources(1, &vbo_cr);
+	cudaGraphicsResourceGetMappedPointer(&(ret.d_vbo), &pos_size, vbo_cr);
+
+	cudaMalloc(&(ret.d_accel), sizeof(float) * 2 * n);
+
+	return ret;
+}
+
+
+extern "C"
+void free_bodies(void *d_accel, void *d_vel)
+{
+	cudaFree(d_accel);
+	cudaFree(d_vel);
+}
+
+
 __device__ float2 ai_from_j(float4 bi, float4 bj, float E2)
 {
 	float2 d;
@@ -191,24 +236,6 @@ __global__ void init_galaxy(float4 *d_pos, float2 *d_vel, int n,
 }
 
 extern "C"
-cu_context_t register_gl(int vbo, int ppv, int n)
-{
-
-	cu_context_t ret;
-
-	ret.ppv = ppv;
-	ret.n = n;
-
-	cudaGraphicsResource_t vbo_cr;
-	cudaGraphicsGLRegisterBuffer(&vbo_cr, vbo, cudaGraphicsRegisterFlagsNone);
-	size_t pos_size;
-	cudaGraphicsMapResources(1, &vbo_cr);
-	cudaGraphicsResourceGetMappedPointer(&(ret.d_vbo), &pos_size, vbo_cr);
-
-	return cu_context_t;
-}
-
-extern "C"
 void init_bodies(void *d_pos_v, void **d_accel_v, void **d_vel_v, int n)
 {
 	float4 *d_pos = (float4 *) d_pos_v;
@@ -243,26 +270,7 @@ void init_bodies(void *d_pos_v, void **d_accel_v, void **d_vel_v, int n)
 
 
 
-extern "C"
-void process_bodies(void *d_pos_v, void *d_accel_v, void *d_vel_v, int n, float dt, float E2)
-{
-	float4 *d_pos = (float4 *) d_pos_v;
-	float2 *d_accel = (float2 *) d_accel_v;
-	float2 *d_vel = (float2 *) d_vel_v;
 
-	int tiles = (n + TILE_SIZE - 1) / TILE_SIZE;
-	find_forces<<<tiles, TILE_SIZE>>>(d_pos, d_accel, n, E2);
-
-	update<<<tiles, TILE_SIZE>>>(d_pos, d_accel, d_vel, n, dt);
-	cudaDeviceSynchronize();
-}
-
-extern "C"
-void free_bodies(void *d_accel, void *d_vel)
-{
-	cudaFree(d_accel);
-	cudaFree(d_vel);
-}
 
 /*
 __global__ void test_vbo_share_kernel(float4 *d_pos)
