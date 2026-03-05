@@ -10,7 +10,7 @@
 #include "nbody_cu.h"
 
 
-__global__ void find_forces(cu_context_t ctx);
+//__global__ void find_forces(cu_context_t ctx);
 __global__ void update(cu_context_t ctx, float dt);
 
 
@@ -19,7 +19,7 @@ void cuda_update(cu_context_t ctx, float dt)
 {
 
 	int tiles = (ctx.n + TILE_SIZE - 1) / TILE_SIZE;
-	find_forces<<<tiles, TILE_SIZE>>>(ctx);
+	//find_forces<<<tiles, TILE_SIZE>>>(ctx);
 
 	update<<<tiles, TILE_SIZE>>>(ctx, dt);
 	cudaDeviceSynchronize();
@@ -28,6 +28,7 @@ void cuda_update(cu_context_t ctx, float dt)
 extern "C"
 cu_context_t register_gl(int vbo, int ppv, int n)
 {
+	fprintf(stderr, "im running\n");
 
 	cu_context_t ret;
 
@@ -36,21 +37,26 @@ cu_context_t register_gl(int vbo, int ppv, int n)
 
 	cudaGraphicsResource_t vbo_cr;
 	cudaGraphicsGLRegisterBuffer(&vbo_cr, vbo, cudaGraphicsRegisterFlagsNone);
+
 	size_t pos_size;
 	cudaGraphicsMapResources(1, &vbo_cr);
-	cudaGraphicsResourceGetMappedPointer(&(ret.d_vbo), &pos_size, vbo_cr);
 
-	cudaMalloc(&(ret.d_accel), sizeof(float) * 2 * n);
+	fprintf(stderr, "did opengl stuff\n");
+	cudaGraphicsResourceGetMappedPointer((void **) &(ret.d_vbo), &pos_size, vbo_cr);
+
+
+	fprintf(stderr, "here just to suffer\n");
+	cudaMalloc((void **) &(ret.d_accel), sizeof(float) * 2 * n);
+	cudaMemset((void *) ret.d_accel, 0, sizeof(float) * 2 * n);
 
 	return ret;
 }
 
 
 extern "C"
-void free_bodies(void *d_accel, void *d_vel)
+void cuda_free(cu_context_t ctx)
 {
-	cudaFree(d_accel);
-	cudaFree(d_vel);
+	cudaFree(ctx.d_accel);
 }
 
 
@@ -108,25 +114,23 @@ __global__ void find_forces(float4 *pos, float2 *accel, int n, float E2)
 	accel[tid] = ai;
 }
 
-__global__ void update(float4 *pos, float2 *accel, float2 *vel, int n, float dt)
+__global__ void update(cu_context_t ctx, float dt)
 {
 	int tid = threadIdx.x + blockDim.x * blockIdx.x;
-	if (tid >= n) {
+	if (tid >= ctx.n) {
 		return;
 	}
 
-	float4 posi = pos[tid];
-	float2 veli = vel[tid];
-	float2 acceli = accel[tid];
+	particle_t part = ctx.d_vbo[tid];
+	float2 acceli = ((float2 *) ctx.d_accel)[tid];
 
-	veli.x += acceli.x * dt;
-	veli.y += acceli.y * dt;
+	part.vx += acceli.x * dt;
+	part.vy += acceli.y * dt;
 
-	posi.x += veli.x * dt;
-	posi.y += veli.y * dt;
+	part.px += part.vx * dt;
+	part.py += part.vy * dt;
 
-	pos[tid] = posi;
-	vel[tid] = veli;
+	ctx.d_vbo[tid] = part;
 }
 
 __global__ void init_rand(float4 *d_pos, float2 *d_vel, int n,

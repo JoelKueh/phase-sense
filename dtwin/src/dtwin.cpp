@@ -1,5 +1,6 @@
 
 #include "render.h"
+#include "nbody_cu.h"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -27,17 +28,19 @@ int simulate(render_context_t *context, const char path[])
 {
 	particle_t buf[50];
 	int result = 0;
-	
+	fprintf(stderr, "attempting to register cuda context\n");
+	fprintf(stderr, "registered cuda context\n");
 	if (render_open_output(context, path) == -1) {
 		result = -1;
-		goto out;
+		//goto out;
+		return result;
 	}
 
 	for (int i = 0; i < 50; i++) {
-		buf[i].position.x = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
-		buf[i].position.y = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
-		buf[i].velocity.x = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
-		buf[i].velocity.y = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
+		buf[i].px = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
+		buf[i].py = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
+		buf[i].vx = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
+		buf[i].vy = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
 		buf[i].rotation = (float)std::rand() / (float)RAND_MAX * 2 * M_PI;
 		buf[i].type = 0;
 		// buf[i].position.x = 0.5;
@@ -49,8 +52,13 @@ int simulate(render_context_t *context, const char path[])
 	}
     glBindBuffer(GL_ARRAY_BUFFER, context->particle_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(buf),
-                 buf, GL_STATIC_DRAW);
+                 buf, GL_DYNAMIC_DRAW);
+
+    cu_context_t cu_ctx = register_gl(context->particle_vbo, 6, 50);
+
     for (int i = 0; i < 50; i++) {
+
+		cuda_update(cu_ctx, 0.2);
 		if (render_frame(context) == -1) {
 			result = -1;
 			goto out_close_output;

@@ -6,8 +6,9 @@ typedef struct {
 	float vx;
 	float vy;
 	float rotation;
-	int type
+	int type;
 } particle_t;
+
 //i am assuming this is structurally identical to the following
 /*
 typedef struct {
@@ -29,4 +30,4 @@ typedef struct
 extern "C" cu_context_t register_gl(int vbo, int ppv, int n);
 //extern "C" void init_bodies (cu_context_t ctx);
 extern "C" void cuda_update(cu_context_t ctx, float dt);
-extern "C" void free_bodies(cu_context_t ctx);
+extern "C" void cuda_free(cu_context_t ctx);
