@@ -49,7 +49,7 @@ $(BIN_DIR)/libnbody_cu.a: src/nbody_cu.cu
 	#ranlib ./$(BIN_DIR)/libnbody_cu.a
 
 .PHONY: $(BIN_DIR)/dtwin
-$(BIN_DIR)/dtwin: obj/dtwin.o $(DTWIN_OBJS) $(BIN_DIR)/libnbody_cu.a $(SHADER_INCS)
+$(BIN_DIR)/dtwin: obj/dtwin.o $(DTWIN_OBJS) $(BIN_DIR)/libnbody_cu.a obj/shaders.o
 	@mkdir -p $(dir $@)
 	@mkdir -p $(OUT_DIR)
 	g++ $(CUDA_LD_FLAGS) -o $@ glad/src/glad.c obj/shaders.o $(DTWIN_OBJS) $(CFLAGS) 

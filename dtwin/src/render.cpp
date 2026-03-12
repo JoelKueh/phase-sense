@@ -96,7 +96,7 @@ int compile_shader_program(GLuint *program,
 
     // Create the vertex shader
     vert_shader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vert_shader, 1, &vert_src, &frag_len);
+	glShaderSource(vert_shader, 1, &vert_src, &vert_len);
 	glCompileShader(vert_shader);
 	glGetShaderiv(vert_shader, GL_COMPILE_STATUS, &success);
 	if (!success) {
@@ -122,7 +122,7 @@ int compile_shader_program(GLuint *program,
 
 	// Create the fragment shader
 	frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(frag_shader, 1, &frag_src, &vert_len);
+	glShaderSource(frag_shader, 1, &frag_src, &frag_len);
 	glCompileShader(frag_shader);
 	glGetShaderiv(frag_shader, GL_COMPILE_STATUS, &success);
 	if (!success) {
@@ -325,35 +325,39 @@ int render_frame(render_context_t *context) {
     // Prepare the rendering buffer.
     glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
     glViewport(0, 0, context->res_x, context->res_y);
-    glClearColor(0.318f, 0.314f, 0.0f, 1.0f);
+    // glClearColor(0.318f, 0.314f, 0.0f, 1.0f);
+    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     // PASS 1: Particle instantiation
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
     glUseProgram(context->particle_program);
     glBindVertexArray(context->particle_vao);
     glDrawArrays(GL_POINTS, 0, 50);
+    glDisable(GL_BLEND);
 
     // PASS 2: Horrizontal PSF Blurring (SPLIT ONLY WORKS BECAUSE GAUSIAN)
-    glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[0]);
-    glViewport(0, 0, context->res_x, context->res_y);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(context->psf_program);
-    loc_resolution = glGetUniformLocation(context->psf_program, "resolution");
-    loc_radius = glGetUniformLocation(context->psf_program, "radius");
-    loc_dir = glGetUniformLocation(context->psf_program, "dir");
-    glUniform1f(loc_resolution, context->res_x);
-    glUniform1f(loc_radius, 5);
-    glUniform2f(loc_dir, 1.0, 0.0);
-    glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    // glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[0]);
+    // glViewport(0, 0, context->res_x, context->res_y);
+    // glClear(GL_COLOR_BUFFER_BIT);
+    // glUseProgram(context->psf_program);
+    // loc_resolution = glGetUniformLocation(context->psf_program, "resolution");
+    // loc_radius = glGetUniformLocation(context->psf_program, "radius");
+    // loc_dir = glGetUniformLocation(context->psf_program, "dir");
+    // glUniform1f(loc_resolution, context->res_x);
+    // glUniform1f(loc_radius, 5);
+    // glUniform2f(loc_dir, 1.0, 0.0);
+    // glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
+    // glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    // PASS 3: Vertical PSF Blurring
-    glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[1]);
-    glViewport(0, 0, context->res_x, context->res_y);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glUniform2f(loc_dir, 0.0, 1.0);
-    glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[0]);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    // // PASS 3: Vertical PSF Blurring
+    // glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[1]);
+    // glViewport(0, 0, context->res_x, context->res_y);
+    // glClear(GL_COLOR_BUFFER_BIT);
+    // glUniform2f(loc_dir, 0.0, 1.0);
+    // glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[0]);
+    // glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
       
     // Read the buffer back from the GPU and write it to ffmpeg.
     // glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);

@@ -25,7 +25,7 @@ const char *OUT_FNAME = "./out/test.mp4";
  */
 int simulate(render_context_t *context, const char path[])
 {
-	particle_t buf[50];
+	particle_t buf[1];
 	int result = 0;
 	
 	if (render_open_output(context, path) == -1) {
@@ -33,7 +33,7 @@ int simulate(render_context_t *context, const char path[])
 		goto out;
 	}
 
-	for (int i = 0; i < 50; i++) {
+	for (int i = 0; i < 1; i++) {
 		buf[i].position.x = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
 		buf[i].position.y = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
 		buf[i].velocity.x = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
@@ -48,7 +48,7 @@ int simulate(render_context_t *context, const char path[])
 		// buf[i].type = 0;
 	}
     glBindBuffer(GL_ARRAY_BUFFER, context->particle_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(buf),
+    glBufferData(GL_ARRAY_BUFFER, 1,
                  buf, GL_STATIC_DRAW);
     for (int i = 0; i < 50; i++) {
 		if (render_frame(context) == -1) {
