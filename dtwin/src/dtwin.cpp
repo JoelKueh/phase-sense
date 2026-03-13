@@ -39,8 +39,8 @@ int simulate(render_context_t *context, const char path[])
 	for (int i = 0; i < 50; i++) {
 		buf[i].px = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
 		buf[i].py = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
-		buf[i].vx = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
-		buf[i].vy = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
+		buf[i].vx = 0.f;
+		buf[i].vy = 0.f;
 		buf[i].rotation = (float)std::rand() / (float)RAND_MAX * 2 * M_PI;
 		buf[i].type = 0;
 		// buf[i].position.x = 0.5;

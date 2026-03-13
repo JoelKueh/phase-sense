@@ -6,11 +6,12 @@
 #include <curand_kernel.h>
 #include <stdio.h>
 #include <cuda_gl_interop.h>
+#include <time.h>
 
 #include "nbody_cu.h"
 
 
-//__global__ void find_forces(cu_context_t ctx);
+__global__ void find_forces(cu_context_t ctx, int seed);
 __global__ void update(cu_context_t ctx, float dt);
 
 
@@ -19,7 +20,9 @@ void cuda_update(cu_context_t ctx, float dt)
 {
 
 	int tiles = (ctx.n + TILE_SIZE - 1) / TILE_SIZE;
-	//find_forces<<<tiles, TILE_SIZE>>>(ctx);
+
+	int cseed = clock();
+	find_forces<<<tiles, TILE_SIZE>>>(ctx, cseed);
 
 	update<<<tiles, TILE_SIZE>>>(ctx, dt);
 	cudaDeviceSynchronize();
@@ -28,7 +31,6 @@ void cuda_update(cu_context_t ctx, float dt)
 extern "C"
 cu_context_t register_gl(int vbo, int ppv, int n)
 {
-	fprintf(stderr, "im running\n");
 
 	cu_context_t ret;
 
@@ -41,11 +43,9 @@ cu_context_t register_gl(int vbo, int ppv, int n)
 	size_t pos_size;
 	cudaGraphicsMapResources(1, &vbo_cr);
 
-	fprintf(stderr, "did opengl stuff\n");
 	cudaGraphicsResourceGetMappedPointer((void **) &(ret.d_vbo), &pos_size, vbo_cr);
 
 
-	fprintf(stderr, "here just to suffer\n");
 	cudaMalloc((void **) &(ret.d_accel), sizeof(float) * 2 * n);
 	cudaMemset((void *) ret.d_accel, 0, sizeof(float) * 2 * n);
 
@@ -83,35 +83,55 @@ __device__ float2 ai_from_j(float4 bi, float4 bj, float E2)
 	return a;
 }
 
-__global__ void find_forces(float4 *pos, float2 *accel, int n, float E2)
+__global__ void find_forces(cu_context_t ctx, int cseed)
 {
+
 	__shared__ float4 positions[TILE_SIZE];
 	int tid = threadIdx.x + blockDim.x * blockIdx.x;
-	if (tid >= n) {
+	if (tid >= ctx.n) {
 		return;
 	}
 	int stride = blockDim.x;
 
-	float2 ai;
-	ai.x = 0;
-	ai.y = 0;
+	curandState_t randstate;
+	curand_init(cseed, tid, 0, &randstate);
 
-	float4 bi = pos[tid];
 
+	particle_t part_a = ctx.d_vbo[tid];
+	float2 accel_a = ((float2 *)ctx.d_accel)[tid];
+
+	float2 accel_new;
+	accel_new.x = 0;
+	accel_new.y = 0;
+
+	accel_new = curand_normal2(&randstate);
+
+	accel_new.x *= 0.1;
+	accel_new.y *= 0.1;
+
+	/*
 	for (int i = threadIdx.x; i < n; i += stride) {
 		positions[threadIdx.x] = pos[i];
 		__syncthreads();
 
+		gravity interaction, dont bother
 		for (int j = 0; j < blockDim.x; j++) {
-			float2 pa = ai_from_j(bi, positions[j], E2);
-			ai.x += pa.x;
-			ai.y += pa.y;
+
+			//do something for each particle for each particle
+			particle_t part_b;
+
+			//gravity, just leaving this here for now
+			//float2 pa = ai_from_j(bi, positions[j], E2);
+			//ai.x += pa.x;
+			//ai.y += pa.y;
 		}
+		
 
 		__syncthreads();
 	}
+	*/
 
-	accel[tid] = ai;
+	((float2 *)ctx.d_accel)[tid] = accel_new;
 }
 
 __global__ void update(cu_context_t ctx, float dt)
