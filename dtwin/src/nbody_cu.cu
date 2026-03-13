@@ -11,8 +11,9 @@
 #include "nbody_cu.h"
 
 
-__global__ void find_forces(cu_context_t ctx, int seed);
+__global__ void collisions(cu_context_t ctx);
 __global__ void update(cu_context_t ctx, float dt);
+__global__ void accel_walk(cu_context_t ctx, int cseed);
 
 
 extern "C"
@@ -21,9 +22,11 @@ void cuda_update(cu_context_t ctx, float dt)
 
 	int tiles = (ctx.n + TILE_SIZE - 1) / TILE_SIZE;
 
-	int cseed = clock();
-	find_forces<<<tiles, TILE_SIZE>>>(ctx, cseed);
 
+
+	collisions<<<tiles, TILE_SIZE>>>(ctx);
+	int cseed = clock();
+	accel_walk<<<tiles, TILE_SIZE>>>(ctx, cseed);
 	update<<<tiles, TILE_SIZE>>>(ctx, dt);
 	cudaDeviceSynchronize();
 }
@@ -49,6 +52,14 @@ cu_context_t register_gl(int vbo, int ppv, int n)
 	cudaMalloc((void **) &(ret.d_accel), sizeof(float) * 2 * n);
 	cudaMemset((void *) ret.d_accel, 0, sizeof(float) * 2 * n);
 
+	int *h_coll = (int *) malloc(sizeof(int) * n);
+	cudaMalloc(&ret.d_coll, sizeof(int) * n);
+	for (int i = 0; i < n; i++) {
+		h_coll[i] = i;
+	}
+	cudaMemcpy(ret.d_coll, (void *) h_coll, n * sizeof(int), cudaMemcpyHostToDevice);
+	
+
 	return ret;
 }
 
@@ -59,7 +70,7 @@ void cuda_free(cu_context_t ctx)
 	cudaFree(ctx.d_accel);
 }
 
-
+/*
 __device__ float2 ai_from_j(float4 bi, float4 bj, float E2)
 {
 	float2 d;
@@ -82,16 +93,20 @@ __device__ float2 ai_from_j(float4 bi, float4 bj, float E2)
 
 	return a;
 }
+*/
 
-__global__ void find_forces(cu_context_t ctx, int cseed)
+__global__ void accel_walk(cu_context_t ctx, int cseed)
 {
-
-	__shared__ float4 positions[TILE_SIZE];
 	int tid = threadIdx.x + blockDim.x * blockIdx.x;
 	if (tid >= ctx.n) {
 		return;
 	}
-	int stride = blockDim.x;
+
+	
+	if (((int *)ctx.d_coll)[tid] != tid) {
+		return;
+	}
+	
 
 	curandState_t randstate;
 	curand_init(cseed, tid, 0, &randstate);
@@ -109,29 +124,79 @@ __global__ void find_forces(cu_context_t ctx, int cseed)
 	accel_new.x *= 0.1;
 	accel_new.y *= 0.1;
 
-	/*
+	((float2 *)ctx.d_accel)[tid] = accel_new;
+
+}
+
+__device__ float distsqr(float ax, float ay, float bx, float by)
+{
+	return (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
+}
+
+__global__ void collisions(cu_context_t ctx)
+{
+
+	__shared__ particle_t particles[TILE_SIZE];
+	int tid = threadIdx.x + blockDim.x * blockIdx.x;
+	if (tid >= ctx.n) {
+		return;
+	}
+	int stride = blockDim.x;
+
+	particle_t part_a = ctx.d_vbo[tid];
+
+	int par_id = d_coll[tid];
+	
 	for (int i = threadIdx.x; i < n; i += stride) {
 		positions[threadIdx.x] = pos[i];
 		__syncthreads();
 
-		gravity interaction, dont bother
 		for (int j = 0; j < blockDim.x; j++) {
 
-			//do something for each particle for each particle
-			particle_t part_b;
+			particle_t part_b = particles[j];
 
-			//gravity, just leaving this here for now
-			//float2 pa = ai_from_j(bi, positions[j], E2);
-			//ai.x += pa.x;
-			//ai.y += pa.y;
+			//TODO replace this with a check more accurate to the shape of the particles
+			float dist = distsqr(part_a.px, part_a.py, part_b.px, part_b.py);
+			if (dist <= 5) {
+				int bid = (i - threadIdx.x) + j;
+				//larger particle id gets "stuck" to lower id
+				if (d_coll[tid] > d_coll[bid]) {
+					d_coll[tid] = d_coll[bid];
+				}
+			}
 		}
-		
 
 		__syncthreads();
 	}
-	*/
+}
 
-	((float2 *)ctx.d_accel)[tid] = accel_new;
+__global__ void sync_clusters(cu_context_t ctx, int *flag)
+{	
+	int tid = threadIdx.x + blockDim.x * blockIdx.x;
+	if (tid >= ctx.n) {
+		return;
+	}
+
+	if (tid == 0) {
+		*flag = 1;
+	}
+	__syncthreads();
+
+	while (*flag) {
+		if (tid == 0) {
+			*flag = 0;
+		}
+		__syncthreads();
+
+		if (d_coll[tid] != d_coll[d_coll[tid]]) {
+			flag = 1;
+			
+			int expm = d_coll[tid];
+			int expp = d_coll[expm];
+			int tp = min(expm, expp);
+
+		}
+	}
 }
 
 __global__ void update(cu_context_t ctx, float dt)

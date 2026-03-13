@@ -28,8 +28,6 @@ int simulate(render_context_t *context, const char path[])
 {
 	particle_t buf[50];
 	int result = 0;
-	fprintf(stderr, "attempting to register cuda context\n");
-	fprintf(stderr, "registered cuda context\n");
 	if (render_open_output(context, path) == -1) {
 		result = -1;
 		//goto out;
@@ -55,6 +53,7 @@ int simulate(render_context_t *context, const char path[])
                  buf, GL_DYNAMIC_DRAW);
 
     cu_context_t cu_ctx = register_gl(context->particle_vbo, 6, 50);
+    fprintf(stderr, "registered cuda context\n");
 
     for (int i = 0; i < 50; i++) {
 

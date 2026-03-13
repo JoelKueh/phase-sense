@@ -25,6 +25,7 @@ typedef struct
 	int n;
 	particle_t *d_vbo;
 	void *d_accel;
+	void *d_coll;
 } cu_context_t;
 
 extern "C" cu_context_t register_gl(int vbo, int ppv, int n);
