@@ -196,8 +196,9 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
     // Create the particle instantiation output texture
     glGenTextures(1, &context->inst_out_tex);
     glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->res_x, context->res_y, 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, context->res_x, context->res_y, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glClampColor(GL_CLAMP_FRAGMENT_COLOR, GL_FALSE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -331,6 +332,7 @@ int render_frame(render_context_t *context) {
 
     // PASS 1: Particle instantiation
     glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_ONE, GL_ONE);
     glUseProgram(context->particle_program);
     glBindVertexArray(context->particle_vao);
