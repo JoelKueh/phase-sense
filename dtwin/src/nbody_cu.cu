@@ -187,13 +187,29 @@ __global__ void sync_clusters(cu_context_t ctx, int *flag)
 			*flag = 0;
 		}
 		__syncthreads();
+	
+		int expm = d_coll[tid];
+		int expp = d_coll[expm];
 
-		if (d_coll[tid] != d_coll[d_coll[tid]]) {
-			flag = 1;
-			
-			int expm = d_coll[tid];
-			int expp = d_coll[expm];
-			int tp = min(expm, expp);
+		/*
+		 * honestly, this sucks in terms of parallelism model
+		 * this synchronization would be easier to perform sequentially
+		 * but i kinda assume the overhead of copying the whole vbo
+		 * would make that not worth this sorta messy fight for the
+		 * collision information
+		 */
+		if (expm != expp) {
+			flag = 1; //this shouldnt be a race condition
+			int idm = min(expm, expp);
+			if (expm < expp) {
+				while (expp > idm) {
+					expp = atomicCAS(d_coll + expm, expp, idm);
+				}
+			} else {
+				while (expm > idm) {
+					expm = atomicCAS(d_coll + tid, expm, idm);
+				}
+			}
 
 		}
 	}
