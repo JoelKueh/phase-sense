@@ -112,8 +112,8 @@ __global__ void accel_walk(cu_context_t ctx, int cseed)
 	curand_init(cseed, tid, 0, &randstate);
 
 
-	particle_t part_a = ctx.d_vbo[tid];
-	float2 accel_a = ((float2 *)ctx.d_accel)[tid];
+	//particle_t part_a = ctx.d_vbo[tid];
+	//float2 accel_a = ((float2 *)ctx.d_accel)[tid];
 
 	float2 accel_new;
 	accel_new.x = 0;
@@ -145,10 +145,10 @@ __global__ void collisions(cu_context_t ctx)
 
 	particle_t part_a = ctx.d_vbo[tid];
 
-	int par_id = d_coll[tid];
+	//int par_id = (ctx.d_coll)[tid];
 	
-	for (int i = threadIdx.x; i < n; i += stride) {
-		positions[threadIdx.x] = pos[i];
+	for (int i = threadIdx.x; i < ctx.n; i += stride) {
+		particles[threadIdx.x] = ctx.d_vbo[i];
 		__syncthreads();
 
 		for (int j = 0; j < blockDim.x; j++) {
@@ -160,8 +160,8 @@ __global__ void collisions(cu_context_t ctx)
 			if (dist <= 5) {
 				int bid = (i - threadIdx.x) + j;
 				//larger particle id gets "stuck" to lower id
-				if (d_coll[tid] > d_coll[bid]) {
-					d_coll[tid] = d_coll[bid];
+				if ((ctx.d_coll)[tid] > (ctx.d_coll)[bid]) {
+					(ctx.d_coll)[tid] = (ctx.d_coll)[bid];
 				}
 			}
 		}
@@ -188,8 +188,8 @@ __global__ void sync_clusters(cu_context_t ctx, int *flag)
 		}
 		__syncthreads();
 	
-		int expm = d_coll[tid];
-		int expp = d_coll[expm];
+		int expm = (ctx.d_coll)[tid];
+		int expp = (ctx.d_coll)[expm];
 
 		/*
 		 * honestly, this sucks in terms of parallelism model
@@ -199,15 +199,15 @@ __global__ void sync_clusters(cu_context_t ctx, int *flag)
 		 * collision information
 		 */
 		if (expm != expp) {
-			flag = 1; //this shouldnt be a race condition
+			*flag = 1; //this shouldnt be a race condition
 			int idm = min(expm, expp);
 			if (expm < expp) {
 				while (expp > idm) {
-					expp = atomicCAS(d_coll + expm, expp, idm);
+					expp = (int) atomicCAS((unsigned int *)ctx.d_coll + expm, (unsigned int) expp, (unsigned int) idm);
 				}
 			} else {
 				while (expm > idm) {
-					expm = atomicCAS(d_coll + tid, expm, idm);
+					expm = (int) atomicCAS((unsigned int *)ctx.d_coll + tid, (unsigned int) expm, (unsigned int) idm);
 				}
 			}
 
