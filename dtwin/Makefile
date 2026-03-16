@@ -8,8 +8,7 @@ SRC_DIR=src
 
 INCLUDE_DIRS= -I/usr/local/cuda/include -I./src -I./glad/include -I./glm -I./obj/shaders
 LD_FLAGS = -lGL -ldl -lglfw
-CUDA_LD_FLAGS = -L/usr/local/cuda/lib64 -lcudart -L./bin -lnbody_cu
-CUDA_LD_FLAGS = 
+CUDA_LD_FLAGS = -L/opt/cuda/lib64 -lcudart ./obj/nbody_cu.o
 
 .PHONY: default clean_all clean debug
 default: $(BIN_DIR)/dtwin
@@ -43,10 +42,7 @@ obj/%.o: src/%.cpp
 	g++ -MMD -MP -MF $(@:.o=.d) -c -o $@ $< $(CFLAGS) 
 
 $(BIN_DIR)/libnbody_cu.a: src/nbody_cu.cu
-	#nvcc -rdc=true -c -o ./$(OBJ_DIR)/temp.o ./$(SRC_DIR)/nbody_cu.cu $(INCLUDE_DIRS) -O2 -gencode=arch=compute_86,code=\"sm_86\"
-	#nvcc -dlink -o ./$(OBJ_DIR)/nbody_cu.o ./$(OBJ_DIR)/temp.o -lcudart $(INCLUDE_DIRS) -gencode=arch=compute_86,code=\"sm_86\"
-	#ar rcs ./$(BIN_DIR)/libnbody_cu.a ./$(OBJ_DIR)/nbody_cu.o ./$(OBJ_DIR)/temp.o
-	#ranlib ./$(BIN_DIR)/libnbody_cu.a
+	nvcc -c -o ./$(OBJ_DIR)/nbody_cu.o ./$(SRC_DIR)/nbody_cu.cu $(INCLUDE_DIRS) -O2 -gencode=arch=compute_86,code=\"sm_86\"
 
 .PHONY: $(BIN_DIR)/dtwin
 $(BIN_DIR)/dtwin: obj/dtwin.o $(DTWIN_OBJS) $(BIN_DIR)/libnbody_cu.a obj/shaders.o

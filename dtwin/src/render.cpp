@@ -1,5 +1,6 @@
 
 #include "render.h"
+#include "nbody_cu.h"
 #include "glad/glad.h"
 
 #include <cstdio>
@@ -262,10 +263,10 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
     glBindBuffer(GL_ARRAY_BUFFER, context->particle_vbo);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(particle_t),
-                          (GLvoid*)offsetof(particle_t, position));
+                          (GLvoid*)offsetof(particle_t, px));
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(particle_t),
-                          (GLvoid*)offsetof(particle_t, velocity));
+                          (GLvoid*)offsetof(particle_t, vx));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
                           (GLvoid*)offsetof(particle_t, rotation));
