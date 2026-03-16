@@ -14,7 +14,7 @@
 __global__ void collisions(cu_context_t ctx);
 __global__ void update(cu_context_t ctx, float dt);
 __global__ void accel_walk(cu_context_t ctx, int cseed);
-
+__global__ void sync_clusters(cu_context_t ctx, int *flag);
 
 extern "C"
 void cuda_update(cu_context_t ctx, float dt)
@@ -25,6 +25,11 @@ void cuda_update(cu_context_t ctx, float dt)
 
 
 	collisions<<<tiles, TILE_SIZE>>>(ctx);
+	int *sync_flag;
+	cudaMalloc(&sync_flag, sizeof(int));
+	sync_clusters<<<tiles, TILE_SIZE>>>(ctx, sync_flag);
+	cudaDeviceSynchronize();
+	cudaFree(sync_flag);
 	int cseed = clock();
 	accel_walk<<<tiles, TILE_SIZE>>>(ctx, cseed);
 	update<<<tiles, TILE_SIZE>>>(ctx, dt);
@@ -157,7 +162,7 @@ __global__ void collisions(cu_context_t ctx)
 
 			//TODO replace this with a check more accurate to the shape of the particles
 			float dist = distsqr(part_a.px, part_a.py, part_b.px, part_b.py);
-			if (dist <= 5) {
+			if (dist <= 0.005) {
 				int bid = (i - threadIdx.x) + j;
 				//larger particle id gets "stuck" to lower id
 				if ((ctx.d_coll)[tid] > (ctx.d_coll)[bid]) {
@@ -212,6 +217,7 @@ __global__ void sync_clusters(cu_context_t ctx, int *flag)
 			}
 
 		}
+		__syncthreads();
 	}
 }
 
@@ -222,16 +228,20 @@ __global__ void update(cu_context_t ctx, float dt)
 		return;
 	}
 
-	particle_t part = ctx.d_vbo[tid];
-	float2 acceli = ((float2 *) ctx.d_accel)[tid];
+	int pid = ctx.d_coll[tid];
 
-	part.vx += acceli.x * dt;
-	part.vy += acceli.y * dt;
+	particle_t self = ctx.d_vbo[tid];
+	particle_t parent = ctx.d_vbo[pid];
 
-	part.px += part.vx * dt;
-	part.py += part.vy * dt;
+	float2 acceli = ((float2 *) ctx.d_accel)[pid];
 
-	ctx.d_vbo[tid] = part;
+	self.vx += acceli.x * dt;
+	self.vy += acceli.y * dt;
+
+	self.px += parent.vx * dt;
+	self.py += parent.vy * dt;
+
+	ctx.d_vbo[tid] = self;	
 }
 
 __global__ void init_rand(float4 *d_pos, float2 *d_vel, int n,
