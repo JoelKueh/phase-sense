@@ -11,10 +11,12 @@
 #include <cstdint>
 #include <cstring>
 #include <random>
+#include <time.h>
 
 float timePast = 0;
 int screen_width = 1200;
 int screen_height = 1200;
+int n = 2000;
 
 const char *OUT_FNAME = "./out/test.mp4";
 
@@ -26,7 +28,7 @@ const char *OUT_FNAME = "./out/test.mp4";
  */
 int simulate(render_context_t *context, const char path[])
 {
-	particle_t buf[50];
+	particle_t buf[n];
 	int result = 0;
 	if (render_open_output(context, path) == -1) {
 		result = -1;
@@ -34,12 +36,13 @@ int simulate(render_context_t *context, const char path[])
 		return result;
 	}
 
-	for (int i = 0; i < 50; i++) {
+	for (int i = 0; i < n; i++) {
 		buf[i].px = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
 		buf[i].py = -1.0 + 2.0 * (float)std::rand() / (float)RAND_MAX;
 		buf[i].vx = 0.f;
 		buf[i].vy = 0.f;
-		buf[i].rotation = (float)std::rand() / (float)RAND_MAX * 2 * M_PI;
+		buf[i].rp = (float)std::rand() / (float)RAND_MAX * 2 * M_PI;
+		buf[i].rv = 0.f;
 		buf[i].type = 0;
 		// buf[i].position.x = 0.5;
 		// buf[i].position.y = 0.5;
@@ -51,16 +54,23 @@ int simulate(render_context_t *context, const char path[])
     glBindBuffer(GL_ARRAY_BUFFER, context->particle_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_DYNAMIC_DRAW);
 
-    cu_context_t cu_ctx = register_gl(context->particle_vbo, 6, 50);
+    cu_context_t cu_ctx = register_gl(context->particle_vbo, 7, n);
     fprintf(stderr, "registered cuda context\n");
 
     for (int i = 0; i < 50; i++) {
 
+	    time_t start = clock();
 		cuda_update(cu_ctx, 0.2);
+
+		time_t cuda = clock();
+		fprintf(stderr, "cuda update time: %fms, ", 1000.0*(cuda - start) / CLOCKS_PER_SEC); 
 		if (render_frame(context) == -1) {
 			result = -1;
 			goto out_close_output;
 		}
+		time_t render = clock();
+
+		fprintf(stderr, "render time: %fms\n", 1000.0*(render - cuda) / CLOCKS_PER_SEC);
     }
 
 out_close_output:

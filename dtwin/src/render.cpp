@@ -269,9 +269,12 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
                           (GLvoid*)offsetof(particle_t, vx));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
-                          (GLvoid*)offsetof(particle_t, rotation));
+                          (GLvoid*)offsetof(particle_t, rp));
     glEnableVertexAttribArray(3);
-    glVertexAttribIPointer(3, 1, GL_INT, sizeof(particle_t),
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, rv));
+    glEnableVertexAttribArray(4);
+    glVertexAttribIPointer(4, 1, GL_INT, sizeof(particle_t),
                            (GLvoid*)offsetof(particle_t, type));
     if (compile_shader_program(&context->particle_program,
                                inst_vert_glsl, inst_vert_glsl_len,

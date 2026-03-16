@@ -5,7 +5,8 @@ typedef struct {
 	float py;
 	float vx;
 	float vy;
-	float rotation;
+	float rp;
+	float rv;
 	int type;
 } particle_t;
 
