@@ -3,3 +3,4 @@ obj/
 out/
 .cache/
 compile_commands.json
+libnbody_cu.a
