@@ -48,13 +48,12 @@ int nbody_ctx_init(nbody_context_t *ctx)
 	}
 
 	// create the opencl context based on the device found above
-	cl_context_properties ctx_props[] = { CL_GL_CONTEXT_KHR,
-					      (cl_context_properties)eglGetCurrentContext(),
-					      CL_EGL_DISPLAY_KHR,
-					      (cl_context_properties)eglGetCurrentDisplay(),
-					      CL_CONTEXT_PLATFORM,
-					      (cl_context_properties)platform_ids[idx],
-					      0 };
+	cl_context_properties ctx_props[] = {
+		CL_GL_CONTEXT_KHR, (cl_context_properties)eglGetCurrentContext(),
+		CL_EGL_DISPLAY_KHR, (cl_context_properties)eglGetCurrentDisplay(),
+		CL_CONTEXT_PLATFORM, (cl_context_properties)platform_ids[idx],
+      	0
+    };
 	ctx->cl_ctx = clCreateContext(ctx_props, 1, device_ids, nbody_err_cb, NULL, &errcode);
 	CL_ERR_PANIC(errcode);
 
