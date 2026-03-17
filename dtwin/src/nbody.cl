@@ -45,9 +45,15 @@ void pcg32_init(ulong *restrict state, ulong seed)
 // approximate gaussian by adding together random floats
 float rand_float(ulong *restrict state)
 {
-	float a = pcg32(state) * 1.0f / 3.0f / (1 << 32);
-	float b = pcg32(state) * 1.0f / 3.0f / (1 << 32);
-	float c = pcg32(state) * 1.0f / 3.0f / (1 << 32);
+	const float scale = 1.0f / 3.0f / (float)((ulong)1 << 32);
+	float a = pcg32(state) * scale;
+	float b = pcg32(state) * scale;
+	float c = pcg32(state) * scale;
+
+	// TODO: Remove
+	// printf("a: %f\n", a);
+	// printf("b: %f\n", b);
+	// printf("c: %f\n", c);
 	return a + b + c;
 }
 
@@ -71,6 +77,10 @@ __kernel void accel_walk(__global int *d_coll, __global void *d_accel, int cseed
 	float2 accel_new;
 	accel_new.x *= rand_float(&rand_state) * 0.1;
 	accel_new.y *= rand_float(&rand_state) * 0.1;
+
+	// TODO: Remove
+	printf("accel_new.vx: %f\n", accel_new.x);
+	printf("accel_new.vy: %f\n", accel_new.y);
 
 	((__global float2 *)d_accel)[tid] = accel_new;
 }
@@ -183,8 +193,9 @@ __kernel void update(__global particle_t *d_vbo, __global int *d_coll,
 
 	self.px += parent.vx * dt;
 	self.py += parent.vy * dt;
-	printf("parent.vx: %f\n", parent.vx);
-	printf("parent.vy: %f\n", parent.vy);
+	// TODO: Remove
+	// printf("parent.vx: %f\n", parent.vx);
+	// printf("parent.vy: %f\n", parent.vy);
 	
 
 	d_vbo[tid] = self;	
