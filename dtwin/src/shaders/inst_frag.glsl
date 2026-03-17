@@ -30,11 +30,8 @@ float seg_dist(vec2 s1, vec2 s2, vec2 p)
 
 void main()
 {
-    vec2 s1 = vec2(0.25f, 0.25f);
-    vec2 s2 = vec2(0.75f, 0.75f);
-    // FragColor = vec4(vec3(sdf(seg_dist(s1, s2, uv))), 1.0);
+    vec2 s1 = vec2(0.35f, 0.5f);
+    vec2 s2 = vec2(0.65f, 0.5f);
     FragColor = vec4(vec3(sdf(seg_dist(s1, s2, uv))), 0.0);
-    // FragColor = vec4(seg_dist(s1, s2, uv), 0.0, 0.0, 1);
-    // FragColor = vec4(0.1f, 0.1f, 0.1f, 1.0f);
     FragVelocity = fVel;
 }

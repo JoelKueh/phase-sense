@@ -50,11 +50,6 @@ float rand_float(ulong *restrict state)
 	float a = (int)pcg32(state) * scale / 3.0f;
 	float b = (int)pcg32(state) * scale / 3.0f;
 	float c = (int)pcg32(state) * scale / 3.0f;
-
-	// TODO: Remove
-	printf("a: %f\n", a);
-	printf("b: %f\n", b);
-	printf("c: %f\n", c);
 	return a + b + c;
 }
 
@@ -70,7 +65,6 @@ __kernel void accel_walk(__global int *d_coll, __global void *d_accel, int cseed
 	}
 
 	ulong rand_state = splitmix64(pcg_init_state + cseed + tid);
-	printf("rand_state: %ld, %d\n", rand_state, tid);
 
 	//particle_t part_a = ctx.d_vbo[tid];
 	//float2 accel_a = ((float2 *)ctx.d_accel)[tid];
