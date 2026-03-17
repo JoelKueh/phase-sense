@@ -1,10 +1,10 @@
 
 #include "render.h"
-#include "nbody_cu.h"
+#include "nbody.h"
 #include "glad/glad.h"
 
-#include <cstdio>
-#include <cstring>
+#include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -19,11 +19,11 @@ extern const char inst_frag_glsl[];
 extern const char quad_vert_glsl[];
 extern const char gaus_frag_glsl[];
 
-extern const int inst_vert_glsl_len;
-extern const int inst_geom_glsl_len;
-extern const int inst_frag_glsl_len;
-extern const int quad_vert_glsl_len;
-extern const int gaus_frag_glsl_len;
+extern const unsigned int inst_vert_glsl_len;
+extern const unsigned int inst_geom_glsl_len;
+extern const unsigned int inst_frag_glsl_len;
+extern const unsigned int quad_vert_glsl_len;
+extern const unsigned int gaus_frag_glsl_len;
 
 static void glfw_error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
@@ -108,7 +108,7 @@ int compile_shader_program(GLuint *program,
 	}
 
 	// Create the geometry shader
-	if (geom_src != nullptr) {
+	if (geom_src != NULL) {
         geom_shader = glCreateShader(GL_GEOMETRY_SHADER);
 	    glShaderSource(geom_shader, 1, &geom_src, &geom_len);
 	    glCompileShader(geom_shader);
@@ -140,7 +140,7 @@ int compile_shader_program(GLuint *program,
 	    goto out_delete_frag;
 	}
 	glAttachShader(*program, vert_shader);
-	if (geom_src != nullptr)
+	if (geom_src != NULL)
 	    glAttachShader(*program, geom_shader);
 	glAttachShader(*program, frag_shader);
 	glLinkProgram(*program);
@@ -157,7 +157,7 @@ int compile_shader_program(GLuint *program,
 out_delete_frag:
     glDeleteShader(frag_shader);
 out_delete_geom:
-    if (geom_src != nullptr)
+    if (geom_src != NULL)
         glDeleteShader(geom_shader);
 out_delete_vert:
     glDeleteShader(vert_shader);
@@ -284,7 +284,7 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
     glGenVertexArrays(1, &context->empty_vao);
     if (compile_shader_program(&context->psf_program,
                                quad_vert_glsl, quad_vert_glsl_len,
-                               nullptr, 0,
+                               NULL, 0,
                                gaus_frag_glsl, gaus_frag_glsl_len)) {
         goto err_close_glfw;
     }

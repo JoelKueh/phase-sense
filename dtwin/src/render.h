@@ -1,9 +1,12 @@
 #pragma once
 
 #include "glad/glad.h"
-#include <glm/glm.hpp>
 #include <stdlib.h>
+#define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_GLX
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+#include <GL/glx.h>
 
 // TODO: Should not be an array of structs. Want struct of attribute buffers.
 // TODO: Move me to somewhere shared by cuda and OpenGL

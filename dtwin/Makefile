@@ -8,7 +8,6 @@ SRC_DIR=src
 
 INCLUDE_DIRS= -I/usr/local/cuda/include -I./src -I./glad/include -I./glm -I./obj/shaders
 LD_FLAGS = -lGL -ldl -lglfw
-CUDA_LD_FLAGS = -L/opt/cuda/lib64 -lcudart ./obj/nbody_cu.o
 
 .PHONY: default clean_all clean debug
 default: $(BIN_DIR)/dtwin
@@ -17,38 +16,30 @@ debug: OPT_LEVEL=
 debug: CFLAGS += -g
 debug: default
 
-CFLAGS = $(INCLUDE_DIRS) $(LD_FLAGS) $(OPT_LEVEL) -std=c++11
+CFLAGS = $(INCLUDE_DIRS) $(LD_FLAGS) $(OPT_LEVEL) -std=c23
 
 SHADER_SRCS = $(SRC_DIR)/shaders/inst_vert.glsl $(SRC_DIR)/shaders/inst_geom.glsl \
 	$(SRC_DIR)/shaders/inst_frag.glsl $(SRC_DIR)/shaders/quad_vert.glsl \
-	$(SRC_DIR)/shaders/gaus_frag.glsl
-SHADER_INCS = $(SHADER_SRCS:src/shaders/%.glsl=obj/shaders/%.h)
+	$(SRC_DIR)/shaders/gaus_frag.glsl $(SRC_DIR)/nbody.cl
 
-DTWIN_SRCS = $(SRC_DIR)/dtwin.cpp $(SRC_DIR)/render.cpp
-DTWIN_OBJS = $(DTWIN_SRCS:src/%.cpp=obj/%.o)
+DTWIN_SRCS = $(SRC_DIR)/dtwin.c $(SRC_DIR)/render.c $(SRC_DIR)/nbody.c
+DTWIN_OBJS = $(DTWIN_SRCS:src/%.c=obj/%.o)
 DTWIN_DEPS = $(DTWIN_OBJS:%.o=%.d)
 -include $(DTWIN_DEPS)
 
-obj/shaders/%.h: src/shaders/%.glsl
+obj/shaders.o: src/shaders.c $(SHADER_SRCS)
 	@mkdir -p $(dir $@)
-	cd $(dir $<) && xxd -i $(shell basename $<) >../../$@
+	$(CC) -MMD -MP -MF $(@:.o=.d) -c -o $@ $< $(CFLAGS) 
 
-obj/shaders.o: src/shaders.cpp $(SHADER_INCS)
+obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	g++ -MMD -MP -MF $(@:.o=.d) -c -o $@ $< $(CFLAGS) 
-
-obj/%.o: src/%.cpp
-	@mkdir -p $(dir $@)
-	g++ -MMD -MP -MF $(@:.o=.d) -c -o $@ $< $(CFLAGS) 
-
-$(BIN_DIR)/libnbody_cu.a: src/nbody_cu.cu
-	nvcc -c -o ./$(OBJ_DIR)/nbody_cu.o ./$(SRC_DIR)/nbody_cu.cu $(INCLUDE_DIRS) -O2 -gencode=arch=compute_86,code=\"sm_86\"
+	$(CC) -MMD -MP -MF $(@:.o=.d) -c -o $@ $< $(CFLAGS) 
 
 .PHONY: $(BIN_DIR)/dtwin
-$(BIN_DIR)/dtwin: obj/dtwin.o $(DTWIN_OBJS) $(BIN_DIR)/libnbody_cu.a obj/shaders.o
+$(BIN_DIR)/dtwin: obj/dtwin.o $(DTWIN_OBJS) obj/shaders.o
 	@mkdir -p $(dir $@)
 	@mkdir -p $(OUT_DIR)
-	g++ $(CUDA_LD_FLAGS) -o $@ glad/src/glad.c obj/shaders.o $(DTWIN_OBJS) $(CFLAGS) 
+	$(CC) -o $@ glad/src/glad.c obj/shaders.o $(DTWIN_OBJS) $(CFLAGS)
 
 clean_all: clean
 	rm -rf ./$(OUT_DIR)/*
