@@ -336,7 +336,7 @@ int render_frame(render_context_t *context) {
     glBlendFunc(GL_ONE, GL_ONE);
     glUseProgram(context->particle_program);
     glBindVertexArray(context->particle_vao);
-    glDrawArrays(GL_POINTS, 0, 50);
+    glDrawArrays(GL_POINTS, 0, 5);
     glDisable(GL_BLEND);
 
     // PASS 2: Horrizontal PSF Blurring (SPLIT ONLY WORKS BECAUSE GAUSIAN)

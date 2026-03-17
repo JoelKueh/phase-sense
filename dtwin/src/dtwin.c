@@ -17,7 +17,7 @@ const char *OUT_FNAME = "./out/test.mp4";
  */
 int simulate(render_context_t *render_ctx, nbody_context_t *nbody_ctx, const char path[])
 {
-	particle_t buf[50];
+	particle_t buf[5];
 	int result = 0;
 
 	// open the output file for writing
@@ -28,7 +28,7 @@ int simulate(render_context_t *render_ctx, nbody_context_t *nbody_ctx, const cha
 	}
 
 	// create an initial buffer of particle positions as data
-	for (int i = 0; i < 50; i++) {
+	for (int i = 0; i < 5; i++) {
 		buf[i].px = -1.0 + 2.0 * (float)rand() / (float)RAND_MAX;
 		buf[i].py = -1.0 + 2.0 * (float)rand() / (float)RAND_MAX;
 		buf[i].vx = 0.f;
@@ -48,7 +48,7 @@ int simulate(render_context_t *render_ctx, nbody_context_t *nbody_ctx, const cha
     glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_DYNAMIC_DRAW);
 
     // initialize the nbody_simulation with the current parameters
-    if (nbody_sim_init(nbody_ctx, render_ctx->particle_vbo, 6, 50)) {
+    if (nbody_sim_init(nbody_ctx, render_ctx->particle_vbo, 6, 5)) {
     	fprintf(stderr, "nbody_sim_init: failed\n");
     	result = -1;
     	goto out_close_output;

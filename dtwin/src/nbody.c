@@ -7,9 +7,9 @@
 
 #define TILE_SIZE 1024
 #define CL_ERR_PANIC(err)                                                        \
-	if (err != CL_SUCCESS) {                                                     \
-		fprintf(stderr, "opencl error: %d at line %d\n", err, __LINE__);         \
-		exit(1);                                                                 \
+	if (err != CL_SUCCESS) {                                                 \
+		fprintf(stderr, "opencl error: %d at line %d\n", err, __LINE__); \
+		exit(1);                                                         \
 	}
 
 extern const char cl_nbody_cu[];
@@ -111,9 +111,9 @@ int nbody_sim_init(nbody_context_t *ctx, int vbo, int ppv, int n)
 	CL_ERR_PANIC(errcode);
 
 	// clear the acceleration buffer
-	float fill_pattern = 0.0f;
-	CL_ERR_PANIC(clEnqueueFillBuffer(ctx->cl_q, ctx->d_accel, &fill_pattern, sizeof(float), 0,
-					 sizeof(float) * 2 * n, 0, NULL, NULL));
+	cl_float fill_pattern = 0.0f;
+	CL_ERR_PANIC(clEnqueueFillBuffer(ctx->cl_q, ctx->d_accel, &fill_pattern, sizeof(cl_float),
+					 0, sizeof(cl_float) * 2 * n, 0, NULL, NULL));
 
 	// populate the coll buffer with ids for each particle
 	int *h_coll = (int *)malloc(sizeof(int) * n);
@@ -157,7 +157,7 @@ void nbody_update(nbody_context_t *ctx, float dt)
 					    &local_size, 0, NULL, NULL));
 
 	// update velocities
-	int seed = (uint64_t)rand() << 32 || rand();
+	int seed = rand();
 	CL_ERR_PANIC(clSetKernelArg(ctx->k_accel_walk, 0, sizeof(cl_mem), &ctx->d_coll));
 	CL_ERR_PANIC(clSetKernelArg(ctx->k_accel_walk, 1, sizeof(cl_mem), &ctx->d_accel));
 	CL_ERR_PANIC(clSetKernelArg(ctx->k_accel_walk, 2, sizeof(int), &seed));

@@ -21,6 +21,13 @@ __constant ulong pcg_init_state = 0x4d595df4d0f33173;
 __constant ulong pcg_mlt = 6364136223846793005u;
 __constant ulong pcg_inc = 1442695040888963407u;
 
+ulong splitmix64(ulong x) {
+	x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    x = x ^ (x >> 31);
+    return x;
+}
+
 uint rotr32(uint x, uint r)
 {
 	return x >> r | x << (-r & 31);
@@ -36,30 +43,24 @@ uint pcg32(ulong *restrict state)
 	return rotr32((uint)(x >> 27), count);
 }
 
-void pcg32_init(ulong *restrict state, ulong seed)
-{
-	*state = seed + pcg_inc;
-	(void)pcg32(state);
-}
-
 // approximate gaussian by adding together random floats
 float rand_float(ulong *restrict state)
 {
-	const float scale = 1.0f / 3.0f / (float)((ulong)1 << 32);
-	float a = pcg32(state) * scale;
-	float b = pcg32(state) * scale;
-	float c = pcg32(state) * scale;
+	const float scale = 1.0f / (float)((ulong)1 << 31);
+	float a = (int)pcg32(state) * scale / 3.0f;
+	float b = (int)pcg32(state) * scale / 3.0f;
+	float c = (int)pcg32(state) * scale / 3.0f;
 
 	// TODO: Remove
-	// printf("a: %f\n", a);
-	// printf("b: %f\n", b);
-	// printf("c: %f\n", c);
+	printf("a: %f\n", a);
+	printf("b: %f\n", b);
+	printf("c: %f\n", c);
 	return a + b + c;
 }
 
 __kernel void accel_walk(__global int *d_coll, __global void *d_accel, int cseed, int n)
 {
-	int tid = get_local_id(0) + get_local_size(0) * get_group_id(0);
+	int tid = get_global_id(0);
 	if (tid >= n) {
 		return;
 	}
@@ -68,19 +69,15 @@ __kernel void accel_walk(__global int *d_coll, __global void *d_accel, int cseed
 		return;
 	}
 
-	ulong rand_state = pcg_init_state;
-	pcg32_init(&rand_state, cseed);
+	ulong rand_state = splitmix64(pcg_init_state + cseed + tid);
+	printf("rand_state: %ld, %d\n", rand_state, tid);
 
 	//particle_t part_a = ctx.d_vbo[tid];
 	//float2 accel_a = ((float2 *)ctx.d_accel)[tid];
 
 	float2 accel_new;
-	accel_new.x *= rand_float(&rand_state) * 0.1;
-	accel_new.y *= rand_float(&rand_state) * 0.1;
-
-	// TODO: Remove
-	printf("accel_new.vx: %f\n", accel_new.x);
-	printf("accel_new.vy: %f\n", accel_new.y);
+	accel_new.x = rand_float(&rand_state) * 0.1;
+	accel_new.y = rand_float(&rand_state) * 0.1;
 
 	((__global float2 *)d_accel)[tid] = accel_new;
 }
@@ -94,7 +91,7 @@ __kernel void collisions(__global particle_t *d_vbo, __global int *d_coll,
                          __global void *d_accel, int n)
 {
 	__local particle_t particles[TILE_SIZE];
-	int tid = get_local_id(0) + get_local_size(0) * get_group_id(0);
+	int tid = get_global_id(0);
 	if (tid >= n) {
 		return;
 	}
@@ -128,7 +125,7 @@ __kernel void collisions(__global particle_t *d_vbo, __global int *d_coll,
 
 __kernel void sync_clusters(__global int *d_coll, __global int *flag, int n)
 {	
-	int tid = get_local_id(0) + get_local_size(0) * get_group_id(0);
+	int tid = get_global_id(0);
 	if (tid >= n) {
 		return;
 	}
@@ -176,7 +173,7 @@ __kernel void sync_clusters(__global int *d_coll, __global int *flag, int n)
 __kernel void update(__global particle_t *d_vbo, __global int *d_coll,
                      __global void *d_accel, float dt, int n)
 {
-	int tid = get_local_id(0) + get_local_size(0) * get_group_id(0);
+	int tid = get_global_id(0);
 	if (tid >= n) {
 		return;
 	}
@@ -193,10 +190,6 @@ __kernel void update(__global particle_t *d_vbo, __global int *d_coll,
 
 	self.px += parent.vx * dt;
 	self.py += parent.vy * dt;
-	// TODO: Remove
-	// printf("parent.vx: %f\n", parent.vx);
-	// printf("parent.vy: %f\n", parent.vy);
-	
 
 	d_vbo[tid] = self;	
 }
