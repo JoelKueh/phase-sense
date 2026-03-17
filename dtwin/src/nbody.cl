@@ -183,6 +183,9 @@ __kernel void update(__global particle_t *d_vbo, __global int *d_coll,
 
 	self.px += parent.vx * dt;
 	self.py += parent.vy * dt;
+	printf("parent.vx: %f\n", parent.vx);
+	printf("parent.vy: %f\n", parent.vy);
+	
 
 	d_vbo[tid] = self;	
 }

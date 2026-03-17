@@ -175,16 +175,15 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
     context->res_y = res_y;
 
     // Create the GLFW context with no no visible window.
-    glfwInit();
-    glfwSetErrorCallback(glfw_error_callback);
     glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
     if (!glfwInit()) {
         fprintf(stderr, "error creating glfw context\n");
         goto err;
     }
+    glfwSetErrorCallback(glfw_error_callback);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     context->window = glfwCreateWindow(res_x, res_y, "phase-sense", NULL, NULL);
     if (!context->window) {

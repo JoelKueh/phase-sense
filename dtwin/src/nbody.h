@@ -3,6 +3,7 @@
 #define CL_TARGET_OPENCL_VERSION 300
 #include <CL/cl.h>
 #include <CL/cl_gl.h>
+#include <CL/cl_egl.h>
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
 #include <GLFW/glfw3.h>
@@ -38,8 +39,8 @@ typedef struct
 	cl_mem d_sync_flag;
 } nbody_context_t;
 
-int nbody_ctx_init(nbody_context_t *ctx, int vbo);
-int nbody_sim_init(nbody_context_t *ctx, int ppv, int n);
+int nbody_ctx_init(nbody_context_t *ctx);
+int nbody_sim_init(nbody_context_t *ctx, int vbo, int ppv, int n);
 void nbody_update(nbody_context_t *ctx, float dt);
 void nbody_sim_deinit(nbody_context_t *ctx);
 void nbody_ctx_deinit(nbody_context_t *ctx);

@@ -26,4 +26,4 @@ const unsigned int gaus_frag_glsl_len = sizeof(gaus_frag_glsl);
 const char cl_nbody_cu[] = {
 #embed "nbody.cl"
 };
-const unsigned int cl_nbody_cu_len_len = sizeof(cl_nbody_cu);
+const unsigned int cl_nbody_cu_len = sizeof(cl_nbody_cu);

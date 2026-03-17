@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 #include <GL/glx.h>
+#include <EGL/egl.h>
 
 // TODO: Should not be an array of structs. Want struct of attribute buffers.
 // TODO: Move me to somewhere shared by cuda and OpenGL

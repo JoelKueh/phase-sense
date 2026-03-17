@@ -48,7 +48,7 @@ int simulate(render_context_t *render_ctx, nbody_context_t *nbody_ctx, const cha
     glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_DYNAMIC_DRAW);
 
     // initialize the nbody_simulation with the current parameters
-    if (nbody_sim_init(nbody_ctx, 6, 50)) {
+    if (nbody_sim_init(nbody_ctx, render_ctx->particle_vbo, 6, 50)) {
     	fprintf(stderr, "nbody_sim_init: failed\n");
     	result = -1;
     	goto out_close_output;
@@ -88,7 +88,7 @@ int main()
 		goto out;
 	}
 
-	if (nbody_ctx_init(&nbody_ctx, render_ctx.particle_vbo)) {
+	if (nbody_ctx_init(&nbody_ctx)) {
 		fprintf(stderr, "nbody context initialization failed\n");
 		result = 1;
 		goto out_render_deinit;
