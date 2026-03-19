@@ -9,17 +9,6 @@
 #include <GL/glx.h>
 #include <EGL/egl.h>
 
-// TODO: Should not be an array of structs. Want struct of attribute buffers.
-// TODO: Move me to somewhere shared by cuda and OpenGL
-/*
-typedef struct {
-    glm::vec2 position;
-    glm::vec2 velocity;
-    GLfloat rotation;
-    GLint type;
-} particle_t;
-*/
-
 typedef struct {
     int pid;
     int pipefds[2];

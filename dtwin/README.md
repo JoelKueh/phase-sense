@@ -5,13 +5,16 @@ This is a digital-twin simulator for the phase-sense ML pipeline.
 
 ## Dependencies
 
-This project depends on the following compile-time libraries:
-1. OpenGL 4.3 - Graphics Rendering API
+This project has 4 main dependencies:
+1. OpenGL 4.3 - Graphics Rendering API/Runtime
+  - See your distributions package manager for development headers.
 2. GLFW3 - OpenGL Context Creation API
-3. glm - OpenGL Math API
-4. CUDA - NVIDIA GPGPU Compute API
-
-This project makes use of an ffmpeg executable (not libffmpeg) to encode rendered simulation frames. To run this program, you MUST have ffmpeg added to your PATH.
+  - See your distributions package manager for development headers.
+3. Compiler that meets the C23 standard with the #embed preprocessor directive
+  - If your C compiler does not support C23, try [zig-cc](https://andrewkelley.me/post/zig-cc-powerful-drop-in-replacement-gcc-clang.html)
+4. Runtime executalbe of ffmpeg added to the PATH
+  - Packeged (and likely already installed) on most systems
+  - Binaries are avaliable on the [FFMPEG website](https://www.ffmpeg.org/download.html)
 
 ## Design Philosophy
 
@@ -19,7 +22,7 @@ This repository implements a Brownian motion particle simulator with tunable sti
 
 ### Phyisics Simulation Backend
 
-The simulator backend is written in CUDA. The backend handles the physical motion and aggregation of particles. Particles randomly move around in 2D space according to a Brownian motion simulation. The simulator tests for collisions between these particles and randomly decides whether the particles will clump together.
+The simulation backend runs entirely on the CPU. The backend handles the physical motion and aggregation of particles. Particles randomly move around in 2D space according to a Brownian motion simulation. The simulator tests for collisions between these particles and randomly decides whether the particles will clump together.
 
 For each frame in the simulation, the simulator backend outputs three things.
 1. Positions, velocities, and rotations of particles packed as in a GPU buffer.
@@ -28,12 +31,14 @@ For each frame in the simulation, the simulator backend outputs three things.
 
 The positions, velocities, and rotations of the particles are passed to the rendering frontend as a single vertex buffer object. This vertex buffer object is packed as an array of structs in the following format.
 
-```cpp
+```c
 typedef struct {
-    glm::vec2 position;
-    glm::vec2 velocity;
-    GLfloat rotation;
-    GLint type;
+	float px;
+	float py;
+	float vx;
+	float vy;
+	float rotation;
+	int type;
 } particle_t;
 ```
 
@@ -52,15 +57,14 @@ simulation_1.mp4,0.25,1280x720
   
 ### Rendering Front End
 
-The rendering frontend renders frames based on the particle data supplied by the CUDA backend. The rendering front end consists of the following phases:
+The rendering frontend renders frames based on the particle data supplied by the backend. The rendering front end consists of the following phases:
 
 1. Particle Intantiation
   - Uses a geometry shader to instantiate particles provided their positions.
-  - Uses a fragment shader to draw the interior of these particles.
+  - Particles are defined by their "spine" (strip of line segments) and a radius.
+  - The way the particles manipulate light is modeled by a function on the distance from the spine.
   - Velocity data is encoded in a velocity buffer to be used later.
-2. Point Spreading Function (PSF) Blurring
-  - A simple convolution-based blur is applied to the whole image.
-3. Motion Blur
+2. Motion Blur
   - Motion blur is applied to the whole image using the velocity buffer.
 
 The rendering front end copies the rendered frames back to the CPU and writes them over a pipe to ffmpeg.
