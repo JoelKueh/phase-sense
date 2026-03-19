@@ -48,7 +48,7 @@ int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
         close(handle->pipefds[1]);
         dup2(handle->pipefds[0], STDIN_FILENO);
         execlp(FFMPEG_PATH, FFMPEG_PATH, "-loglevel", "quiet", "-f", "rawvideo", "-pix_fmt",
-               "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname);
+               "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname, NULL);
         perror("execlp");
         fprintf(stderr, "Is ffmpeg in the path?\n");
         exit(-1);
@@ -166,13 +166,14 @@ out:
     return result;
 }
 
-int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y) {
+int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y, uint32_t pcount) {
     const GLenum inst_buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     const GLenum draw_buffers[2] = {GL_COLOR_ATTACHMENT0};
     int result = 0;
 
     context->res_x = res_x;
     context->res_y = res_y;
+    context->pcount = pcount;
 
     // Create the GLFW context with no no visible window.
     glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
@@ -336,7 +337,7 @@ int render_frame(render_context_t *context) {
     glBlendFunc(GL_ONE, GL_ONE);
     glUseProgram(context->particle_program);
     glBindVertexArray(context->particle_vao);
-    glDrawArrays(GL_POINTS, 0, 80);
+    glDrawArrays(GL_POINTS, 0, context->pcount);
     glDisable(GL_BLEND);
 
     // PASS 2: Horrizontal PSF Blurring (SPLIT ONLY WORKS BECAUSE GAUSIAN)

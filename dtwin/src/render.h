@@ -30,6 +30,7 @@ typedef struct {
     uint8_t *ffmpeg_buf;
     uint32_t res_x;
     uint32_t res_y;
+    uint32_t pcount;
 
     // GLFW context and buffer outputs
     GLFWwindow *window;
@@ -64,7 +65,7 @@ typedef struct {
  * @return 0 on success or -1 on error.
  */
 int render_init(render_context_t *context,
-                uint32_t res_x, uint32_t res_y);
+                uint32_t res_x, uint32_t res_y, uint32_t pcount);
 
 /**
  * @brief Initializes the render pipeline to feed data to out_path.

@@ -1,15 +1,6 @@
 #pragma once
 
-#define CL_TARGET_OPENCL_VERSION 300
-#include <CL/cl.h>
-#include <CL/cl_gl.h>
-#include <CL/cl_egl.h>
-#define GLFW_EXPOSE_NATIVE_X11
-#define GLFW_EXPOSE_NATIVE_GLX
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
-#include <GL/glx.h>
-#include <CL/cl.h>
+#include "rand.h"
 
 typedef struct {
 	float px;
@@ -20,27 +11,30 @@ typedef struct {
 	int type;
 } particle_t;
 
+typedef struct disj_cluster_node_t disj_cluster_node_t;
+struct disj_cluster_node_t {
+	// disjoint sets book-keeping data
+	disj_cluster_node_t *parent; // pointer to the parent of the node
+	int rank;                    // distance of the node from the root of the cluster
+
+	// data for the cluster itself
+	float mass;              // the mass of the cluster only valid at the center
+	float com_x;             // the x position of the center of mass of the cluster
+	float com_y;             // the y position of the center of mass of the cluster
+
+	bool updated;            // has this cluster been updated this frame
+	float vx;             // the x velocity of the particle this frame
+	float vy;             // the y velocity of the particel this frame
+};
+
 typedef struct
 {
-	cl_context cl_ctx;
-	cl_command_queue cl_q;
-	cl_program cl_prog;
-
-	cl_kernel k_collisions;
-	cl_kernel k_update;
-	cl_kernel k_accel_walk;
-	cl_kernel k_sync_clusters;
-	
-	int ppv;
-	int n;
-	cl_mem d_vbo;
-	cl_mem d_accel;
-	cl_mem d_coll;
-	cl_mem d_sync_flag;
+	rand_state rand_state;
+	int pcount;
+	particle_t *pbuf;
+	disj_cluster_node_t *disj_clusters;
 } nbody_context_t;
 
-int nbody_ctx_init(nbody_context_t *ctx);
-int nbody_sim_init(nbody_context_t *ctx, int vbo, int ppv, int n);
+int nbody_init(nbody_context_t *ctx, int pcount);
 void nbody_update(nbody_context_t *ctx, float dt);
-void nbody_sim_deinit(nbody_context_t *ctx);
-void nbody_ctx_deinit(nbody_context_t *ctx);
+void nbody_deinit(nbody_context_t *ctx);
