@@ -6,8 +6,8 @@ OBJ_DIR=obj
 BIN_DIR=bin
 SRC_DIR=src
 
-INCLUDE_DIRS=-I./src -I./glad/include -I./glm -I./obj/shaders
-LD_FLAGS=-lGL -ldl -lglfw -lm
+INCLUDE_DIRS= -I/usr/local/cuda/include -I./src -I./glad/include -I./glm -I./obj/shaders
+LD_FLAGS = -lGL -ldl -lglfw -lOpenCL -lEGL
 
 .PHONY: default clean_all clean debug
 default: $(BIN_DIR)/dtwin
