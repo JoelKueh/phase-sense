@@ -49,6 +49,8 @@ int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
         dup2(handle->pipefds[0], STDIN_FILENO);
         execlp(FFMPEG_PATH, FFMPEG_PATH, "-loglevel", "quiet", "-f", "rawvideo", "-pix_fmt",
                "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname, NULL);
+        // execlp(FFMPEG_PATH, FFMPEG_PATH, "-f", "rawvideo", "-pix_fmt",
+        //        "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname, NULL);
         perror("execlp");
         fprintf(stderr, "Is ffmpeg in the path?\n");
         exit(-1);

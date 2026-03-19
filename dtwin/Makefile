@@ -7,7 +7,7 @@ BIN_DIR=bin
 SRC_DIR=src
 
 INCLUDE_DIRS=-I./src -I./glad/include -I./glm -I./obj/shaders
-LD_FLAGS=-lGL -ldl -lglfw -lm
+LD_FLAGS=-lGL -lglfw -lm
 
 .PHONY: default clean_all clean debug
 default: $(BIN_DIR)/dtwin

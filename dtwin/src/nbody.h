@@ -36,5 +36,5 @@ typedef struct
 } nbody_context_t;
 
 int nbody_init(nbody_context_t *ctx, int pcount);
-void nbody_update(nbody_context_t *ctx, float dt);
+float nbody_update(nbody_context_t *ctx, float dt);
 void nbody_deinit(nbody_context_t *ctx);

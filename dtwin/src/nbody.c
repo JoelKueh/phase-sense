@@ -142,6 +142,30 @@ void part_vel_walk(nbody_context_t *ctx, float dt)
 	}
 }
 
+float emergence_idx(nbody_context_t *ctx)
+{
+	disj_cluster_node_t *node;
+	double total_mass = 0.0;
+	int cluster_count = 0;
+	int i;
+
+	// Option 1: Walk over all of the clusters and return the average mass
+	for (i = 0; i < ctx->pcount; i++) {
+		ctx->disj_clusters[i].updated = false;
+	}
+
+	for (i = 0; i < ctx->pcount; i++) {
+		node = &ctx->disj_clusters[i];
+		if (node->updated == false) {
+			total_mass += node->mass;
+			node->updated = true;
+			cluster_count += 1;
+		}
+	}
+
+	return total_mass / cluster_count;
+}
+
 int nbody_init(nbody_context_t *ctx, int pcount)
 {
 	float_pair_t fpair;
@@ -186,10 +210,11 @@ int nbody_init(nbody_context_t *ctx, int pcount)
 	return 0;
 }
 
-void nbody_update(nbody_context_t *ctx, float dt)
+float nbody_update(nbody_context_t *ctx, float dt)
 {
 	part_pair_walk(ctx);
 	part_vel_walk(ctx, dt);
+	return emergence_idx(ctx);
 }
 
 void nbody_deinit(nbody_context_t *ctx)
