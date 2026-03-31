@@ -168,14 +168,10 @@ out:
     return result;
 }
 
-int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y, uint32_t pcount) {
+int render_init(render_context_t *context, params_t *params) {
     const GLenum inst_buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     const GLenum draw_buffers[2] = {GL_COLOR_ATTACHMENT0};
     int result = 0;
-
-    context->res_x = res_x;
-    context->res_y = res_y;
-    context->pcount = pcount;
 
     // Create the GLFW context with no no visible window.
     glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
@@ -188,7 +184,7 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y, uint3
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    context->window = glfwCreateWindow(res_x, res_y, "phase-sense", NULL, NULL);
+    context->window = glfwCreateWindow(params->res_x, params->res_y, "phase-sense", NULL, NULL);
     if (!context->window) {
         fprintf(stderr, "error creating glfw window\n");
         goto err_close_glfw;
@@ -199,8 +195,8 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y, uint3
     // Create the particle instantiation output texture
     glGenTextures(1, &context->inst_out_tex);
     glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, context->res_x, context->res_y, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, context->params->res_x, context->params->res_y,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     glClampColor(GL_CLAMP_FRAGMENT_COLOR, GL_FALSE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -211,8 +207,8 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y, uint3
     // Create the particle instantiation velocity texture
     glGenTextures(1, &context->inst_vel_tex);
     glBindTexture(GL_TEXTURE_2D, context->inst_vel_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, context->res_x, context->res_y, 0,
-                 GL_RG, GL_HALF_FLOAT, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, context->params->res_x, context->params->res_y,
+                 0, GL_RG, GL_HALF_FLOAT, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -236,8 +232,8 @@ int render_init(render_context_t *context, uint32_t res_x, uint32_t res_y, uint3
     glGenTextures(2, context->draw_out_texs);
     for (int i = 0; i < 2; i++) {
         glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->res_x, context->res_y, 0,
-                     GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->params->res_x, context->params->res_y,
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -307,11 +303,11 @@ int render_open_output(render_context_t *context, const char fname[]) {
     char res_buf[16] = "";
 
     if ((context->ffmpeg_buf =
-            (uint8_t*)malloc(context->res_x * context->res_y * 4)) == 0)
+            (uint8_t*)malloc(context->params->res_x * context->params->res_y * 4)) == 0)
         return -1;
 
     snprintf(res_buf, sizeof(res_buf), "%dx%d",
-             context->res_x, context->res_y);
+             context->params->res_x, context->params->res_y);
     if (ffmpeg_open(&context->h_ffmpeg, res_buf, fname) == -1)
         return -1;
 
@@ -328,7 +324,7 @@ int render_frame(render_context_t *context) {
     
     // Prepare the rendering buffer.
     glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
-    glViewport(0, 0, context->res_x, context->res_y);
+    glViewport(0, 0, context->params->res_x, context->params->res_y);
     // glClearColor(0.318f, 0.314f, 0.0f, 1.0f);
     glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -339,7 +335,7 @@ int render_frame(render_context_t *context) {
     glBlendFunc(GL_ONE, GL_ONE);
     glUseProgram(context->particle_program);
     glBindVertexArray(context->particle_vao);
-    glDrawArrays(GL_POINTS, 0, context->pcount);
+    glDrawArrays(GL_POINTS, 0, context->params->particle_cnt);
     glDisable(GL_BLEND);
 
     // PASS 2: Horrizontal PSF Blurring (SPLIT ONLY WORKS BECAUSE GAUSIAN)
@@ -368,11 +364,11 @@ int render_frame(render_context_t *context) {
     // glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glFinish();
-    memset(context->ffmpeg_buf, 0xFF, context->res_x * context->res_y * 4);
-    glReadPixels(0, 0, context->res_x, context->res_y, GL_RGBA,
+    memset(context->ffmpeg_buf, 0xFF, context->params->res_x * context->params->res_y * 4);
+    glReadPixels(0, 0, context->params->res_x, context->params->res_y, GL_RGBA,
                  GL_UNSIGNED_BYTE, context->ffmpeg_buf);
     if (ffmpeg_write(&context->h_ffmpeg, context->ffmpeg_buf,
-                     context->res_x * context->res_y * 4) == -1)
+                     context->params->res_x * context->params->res_y * 4) == -1)
         return -1;
 
     return 0;

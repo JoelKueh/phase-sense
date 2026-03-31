@@ -1,15 +1,9 @@
 
 #include "render.h"
 #include "nbody.h"
+#include "param.h"
 #include <stdio.h>
 #include <sys/time.h>
-
-float timePast = 0;
-int screen_width = 1200;
-int screen_height = 1200;
-int pcount = 100;
-int num_frames = 200;
-int num_videos = 50;
 
 const char *VIDEO_OUT_FNAME = "./out/test.mp4";
 const char *META_OUT_FNAME = "./out/test.meta";
@@ -45,14 +39,14 @@ int simulate(render_context_t *render_ctx, const char video_path[], const char m
 	}
 
 	// initialize the nbody_simulation with the current parameters
-	if (nbody_init(&nbody_ctx, pcount)) {
+	if (nbody_init(&nbody_ctx, render_ctx->params)) {
 		fprintf(stderr, "nbody_init: failed\n");
 		result = -1;
 		goto out_close_meta;
 	}
 
 	// render the desired number of frames
-	for (int i = 0; i < num_frames; i++) {
+	for (int i = 0; i < render_ctx->params->frame_cnt; i++) {
 		// update the simulation data on the cpu
   		gettimeofday(&start, NULL);
 		emergence_idx = nbody_update(&nbody_ctx, 0.2);
@@ -67,8 +61,8 @@ int simulate(render_context_t *render_ctx, const char video_path[], const char m
 		// load the data from the host buffer to the gpu
   		gettimeofday(&start, NULL);
 		glBindBuffer(GL_ARRAY_BUFFER, render_ctx->particle_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(particle_t) * nbody_ctx.pcount, nbody_ctx.pbuf,
-			     GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(particle_t) * render_ctx->params->particle_cnt,
+		             nbody_ctx.pbuf, GL_DYNAMIC_DRAW);
 
 		// render the frame and pass the data to ffmpeg
 		if (render_frame(render_ctx) == -1) {
@@ -107,17 +101,34 @@ int main()
 	char meta_path_buf[128];
 	int result = 0;
 	render_context_t render_ctx;
+	params_t dtwin_params = {
+		.scale = 1.0,
+		.res_x = 100,
+		.res_y = 100,
 
-	if (render_init(&render_ctx, screen_width, screen_height, pcount) == -1) {
+		.aggr_prob = 0.1,
+		.accel_distr_mu = 0.0,
+		.accel_distr_sig = 0.1,
+		.mass_vel_scale = 0.5,
+		.vel_decay_rate = 0.9,
+
+		.frame_cnt = 120,
+		.video_cnt = 1,
+		.out_dir = "./out/test2"
+	};
+
+	if (render_init(&render_ctx, &dtwin_params) == -1) {
 		fprintf(stderr, "opengl context initialization failed\n");
 		result = 1;
 		goto out;
 	}
 
-	for (int i = 0; i < num_videos; i++) {
-		fprintf(stderr, "Rendering Video %d/%d\n", i+1, num_videos);
-		snprintf(video_path_buf, sizeof(video_path_buf), "./out/ds/%d.mp4", i);
-		snprintf(meta_path_buf, sizeof(meta_path_buf), "./out/ds/%d.meta", i);
+	for (int i = 0; i < dtwin_params.video_cnt; i++) {
+		fprintf(stderr, "Rendering Video %d/%d\n", i+1, dtwin_params.video_cnt);
+		snprintf(video_path_buf, sizeof(video_path_buf), "%s/%d.mp4",
+		         dtwin_params.out_dir, i);
+		snprintf(meta_path_buf, sizeof(meta_path_buf), "%s/%d.meta",
+		         dtwin_params.out_dir, i);
 		if (simulate(&render_ctx, video_path_buf, meta_path_buf) == -1) {
 			fprintf(stderr, "simulation error\n");
 			result = 1;

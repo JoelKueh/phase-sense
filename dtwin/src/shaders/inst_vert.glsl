@@ -9,9 +9,11 @@ flat out vec2 vVel;
 flat out float vRot;
 flat out int vPartIdx;
 
+uniform float scale;
+
 void main()
 {
-    gl_Position = vec4(aPos, 0.0, 1.);
+    gl_Position = vec4(aPos * scale, 0.0, 1.0);
     vVel = aVel;
     vRot = aRot;
     vPartIdx = aPartIdx;

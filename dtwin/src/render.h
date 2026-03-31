@@ -1,5 +1,6 @@
 #pragma once
 
+#include "param.h"
 #include "glad/glad.h"
 #include <stdlib.h>
 #define GLFW_EXPOSE_NATIVE_X11
@@ -17,9 +18,7 @@ typedef struct {
 typedef struct {
     ffmpeg_handle_t h_ffmpeg;
     uint8_t *ffmpeg_buf;
-    uint32_t res_x;
-    uint32_t res_y;
-    uint32_t pcount;
+    params_t *params;
 
     // GLFW context and buffer outputs
     GLFWwindow *window;
@@ -53,8 +52,7 @@ typedef struct {
  * @param context A renderer context that can be used later.
  * @return 0 on success or -1 on error.
  */
-int render_init(render_context_t *context,
-                uint32_t res_x, uint32_t res_y, uint32_t pcount);
+int render_init(render_context_t *context, params_t *params);
 
 /**
  * @brief Initializes the render pipeline to feed data to out_path.

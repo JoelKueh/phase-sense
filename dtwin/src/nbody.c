@@ -86,8 +86,8 @@ void part_pair_walk(nbody_context_t *ctx)
 	float dist;
 
 	// test for all distances between particles
-	for (i = 0; i < ctx->pcount; i++) {
-		for (j = i + 1; j < ctx->pcount; j++) {
+	for (i = 0; i < ctx->params->particle_cnt; i++) {
+		for (j = i + 1; j < ctx->params->particle_cnt; j++) {
 			// skip particles that are already in the same cluster
 			clust_a = disj_cluster_find(&ctx->disj_clusters[i]);
 			clust_b = disj_cluster_find(&ctx->disj_clusters[j]);
@@ -117,12 +117,12 @@ void part_vel_walk(nbody_context_t *ctx, float dt)
 	int i;
 
 	// loop over all clusters and set updated flag to 0
-	for (i = 0; i < ctx->pcount; i++) {
+	for (i = 0; i < ctx->params->particle_cnt; i++) {
 		ctx->disj_clusters[i].updated = false;
 	}
 
 	// loop over all particles and update their positions and velocities
-	for (i = 0; i < ctx->pcount; i++) {
+	for (i = 0; i < ctx->params->particle_cnt; i++) {
 		clust = disj_cluster_find(&ctx->disj_clusters[i]);
 		part = &ctx->pbuf[i];
 
@@ -150,11 +150,11 @@ float emergence_idx(nbody_context_t *ctx)
 	int i;
 
 	// Option 1: Walk over all of the clusters and return the average mass
-	for (i = 0; i < ctx->pcount; i++) {
+	for (i = 0; i < ctx->params->particle_cnt; i++) {
 		ctx->disj_clusters[i].updated = false;
 	}
 
-	for (i = 0; i < ctx->pcount; i++) {
+	for (i = 0; i < ctx->params->particle_cnt; i++) {
 		node = &ctx->disj_clusters[i];
 		if (node->updated == false) {
 			total_mass += node->mass;
@@ -166,7 +166,7 @@ float emergence_idx(nbody_context_t *ctx)
 	return total_mass / cluster_count;
 }
 
-int nbody_init(nbody_context_t *ctx, int pcount)
+int nbody_init(nbody_context_t *ctx, params_t *params)
 {
 	float_pair_t fpair;
 
@@ -174,23 +174,23 @@ int nbody_init(nbody_context_t *ctx, int pcount)
 	ctx->rand_state = splitmix64(time(NULL));
 
 	// allocate host particle and cluster buffers
-	ctx->pcount = pcount;
-	if ((ctx->pbuf = malloc(pcount * sizeof(particle_t))) == 0) {
+	ctx->params = params;
+	if ((ctx->pbuf = malloc(params->particle_cnt * sizeof(particle_t))) == 0) {
 		fprintf(stderr, "nbody_init: out of memory\n");
 		return -1;
 	}
 
-	if ((ctx->disj_clusters = malloc(pcount * sizeof(disj_cluster_node_t))) == 0) {
+	if ((ctx->disj_clusters = malloc(params->particle_cnt * sizeof(disj_cluster_node_t))) == 0) {
 		fprintf(stderr, "nbody_init: out of memory\n");
 		free(ctx->pbuf);
 		return -1;
 	}
 
 	// initialize the data in the particle and cluster buffers
-	for (int i = 0; i < pcount; i++) {
+	for (int i = 0; i < params->particle_cnt; i++) {
 		// position data belongs to the particle in the cluster
-		ctx->pbuf[i].px = rand_uniform_float(&ctx->rand_state, -1.0, 1.0);
-		ctx->pbuf[i].py = rand_uniform_float(&ctx->rand_state, -1.0, 1.0);
+		ctx->pbuf[i].px = rand_uniform_float(&ctx->rand_state, 0.0, 1.0);
+		ctx->pbuf[i].py = rand_uniform_float(&ctx->rand_state, 0.0, 1.0);
 		ctx->pbuf[i].vx = 0.0f;
 		ctx->pbuf[i].vy = 0.0f;
 		ctx->pbuf[i].rotation = rand_uniform_float(&ctx->rand_state, -M_PI, M_PI);
