@@ -3,8 +3,7 @@
 typedef struct {
 	// window size parameters
 	double scale;
-	int res_x;
-	int res_y;
+	int res;
 
 	// simulation parameters
 	double aggr_prob;

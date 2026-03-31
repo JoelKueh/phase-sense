@@ -102,19 +102,19 @@ int main()
 	int result = 0;
 	render_context_t render_ctx;
 	params_t dtwin_params = {
-		.scale = 1.0,
-		.res_x = 100,
-		.res_y = 100,
+		.scale = 0.2,
+		.res = 1200,
 
 		.aggr_prob = 0.1,
 		.accel_distr_mu = 0.0,
 		.accel_distr_sig = 0.1,
 		.mass_vel_scale = 0.5,
 		.vel_decay_rate = 0.9,
+		.particle_cnt = 5000,
 
 		.frame_cnt = 120,
-		.video_cnt = 1,
-		.out_dir = "./out/test2"
+		.video_cnt = 5,
+		.out_dir = "./out/ds"
 	};
 
 	if (render_init(&render_ctx, &dtwin_params) == -1) {

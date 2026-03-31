@@ -169,6 +169,7 @@ float emergence_idx(nbody_context_t *ctx)
 int nbody_init(nbody_context_t *ctx, params_t *params)
 {
 	float_pair_t fpair;
+	float bound;
 
 	// initialize the randomizer
 	ctx->rand_state = splitmix64(time(NULL));
@@ -187,10 +188,11 @@ int nbody_init(nbody_context_t *ctx, params_t *params)
 	}
 
 	// initialize the data in the particle and cluster buffers
+	bound = 1.0 / ctx->params->scale;
 	for (int i = 0; i < params->particle_cnt; i++) {
 		// position data belongs to the particle in the cluster
-		ctx->pbuf[i].px = rand_uniform_float(&ctx->rand_state, 0.0, 1.0);
-		ctx->pbuf[i].py = rand_uniform_float(&ctx->rand_state, 0.0, 1.0);
+		ctx->pbuf[i].px = rand_uniform_float(&ctx->rand_state, -bound, bound);
+		ctx->pbuf[i].py = rand_uniform_float(&ctx->rand_state, -bound, bound);
 		ctx->pbuf[i].vx = 0.0f;
 		ctx->pbuf[i].vy = 0.0f;
 		ctx->pbuf[i].rotation = rand_uniform_float(&ctx->rand_state, -M_PI, M_PI);

@@ -173,6 +173,9 @@ int render_init(render_context_t *context, params_t *params) {
     const GLenum draw_buffers[2] = {GL_COLOR_ATTACHMENT0};
     int result = 0;
 
+    // Pass the parameter struct into the context
+    context->params = params;
+
     // Create the GLFW context with no no visible window.
     glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
     if (!glfwInit()) {
@@ -184,7 +187,7 @@ int render_init(render_context_t *context, params_t *params) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    context->window = glfwCreateWindow(params->res_x, params->res_y, "phase-sense", NULL, NULL);
+    context->window = glfwCreateWindow(params->res, params->res, "phase-sense", NULL, NULL);
     if (!context->window) {
         fprintf(stderr, "error creating glfw window\n");
         goto err_close_glfw;
@@ -195,7 +198,7 @@ int render_init(render_context_t *context, params_t *params) {
     // Create the particle instantiation output texture
     glGenTextures(1, &context->inst_out_tex);
     glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, context->params->res_x, context->params->res_y,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, context->params->res, context->params->res,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     glClampColor(GL_CLAMP_FRAGMENT_COLOR, GL_FALSE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -207,7 +210,7 @@ int render_init(render_context_t *context, params_t *params) {
     // Create the particle instantiation velocity texture
     glGenTextures(1, &context->inst_vel_tex);
     glBindTexture(GL_TEXTURE_2D, context->inst_vel_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, context->params->res_x, context->params->res_y,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, context->params->res, context->params->res,
                  0, GL_RG, GL_HALF_FLOAT, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -232,7 +235,7 @@ int render_init(render_context_t *context, params_t *params) {
     glGenTextures(2, context->draw_out_texs);
     for (int i = 0; i < 2; i++) {
         glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->params->res_x, context->params->res_y,
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->params->res, context->params->res,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -303,11 +306,11 @@ int render_open_output(render_context_t *context, const char fname[]) {
     char res_buf[16] = "";
 
     if ((context->ffmpeg_buf =
-            (uint8_t*)malloc(context->params->res_x * context->params->res_y * 4)) == 0)
+            (uint8_t*)malloc(context->params->res * context->params->res * 4)) == 0)
         return -1;
 
     snprintf(res_buf, sizeof(res_buf), "%dx%d",
-             context->params->res_x, context->params->res_y);
+             context->params->res, context->params->res);
     if (ffmpeg_open(&context->h_ffmpeg, res_buf, fname) == -1)
         return -1;
 
@@ -320,11 +323,11 @@ int render_close_output(render_context_t *context) {
 }
 
 int render_frame(render_context_t *context) {
-    GLuint loc_resolution, loc_radius, loc_dir;
+    GLuint loc_resolution, loc_radius, loc_dir, loc_scale;
     
     // Prepare the rendering buffer.
     glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
-    glViewport(0, 0, context->params->res_x, context->params->res_y);
+    glViewport(0, 0, context->params->res, context->params->res);
     // glClearColor(0.318f, 0.314f, 0.0f, 1.0f);
     glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -334,13 +337,15 @@ int render_frame(render_context_t *context) {
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_ONE, GL_ONE);
     glUseProgram(context->particle_program);
+    loc_scale = glGetUniformLocation(context->particle_program, "scale");
+    glUniform1f(loc_scale, context->params->scale);
     glBindVertexArray(context->particle_vao);
     glDrawArrays(GL_POINTS, 0, context->params->particle_cnt);
     glDisable(GL_BLEND);
 
     // PASS 2: Horrizontal PSF Blurring (SPLIT ONLY WORKS BECAUSE GAUSIAN)
     // glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[0]);
-    // glViewport(0, 0, context->res_x, context->res_y);
+    // glViewport(0, 0, context->res, context->res);
     // glClear(GL_COLOR_BUFFER_BIT);
     // glUseProgram(context->psf_program);
     // loc_resolution = glGetUniformLocation(context->psf_program, "resolution");
@@ -354,7 +359,7 @@ int render_frame(render_context_t *context) {
 
     // // PASS 3: Vertical PSF Blurring
     // glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[1]);
-    // glViewport(0, 0, context->res_x, context->res_y);
+    // glViewport(0, 0, context->res, context->res);
     // glClear(GL_COLOR_BUFFER_BIT);
     // glUniform2f(loc_dir, 0.0, 1.0);
     // glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[0]);
@@ -364,11 +369,11 @@ int render_frame(render_context_t *context) {
     // glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glFinish();
-    memset(context->ffmpeg_buf, 0xFF, context->params->res_x * context->params->res_y * 4);
-    glReadPixels(0, 0, context->params->res_x, context->params->res_y, GL_RGBA,
+    memset(context->ffmpeg_buf, 0xFF, context->params->res * context->params->res * 4);
+    glReadPixels(0, 0, context->params->res, context->params->res, GL_RGBA,
                  GL_UNSIGNED_BYTE, context->ffmpeg_buf);
     if (ffmpeg_write(&context->h_ffmpeg, context->ffmpeg_buf,
-                     context->params->res_x * context->params->res_y * 4) == -1)
+                     context->params->res * context->params->res * 4) == -1)
         return -1;
 
     return 0;
