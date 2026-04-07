@@ -48,7 +48,7 @@ int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
         close(handle->pipefds[1]);
         dup2(handle->pipefds[0], STDIN_FILENO);
         execlp(FFMPEG_PATH, FFMPEG_PATH, "-loglevel", "quiet", "-f", "rawvideo", "-pix_fmt",
-               "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname, NULL);
+               "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname, "-y", NULL);
         // execlp(FFMPEG_PATH, FFMPEG_PATH, "-f", "rawvideo", "-pix_fmt",
         //        "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname, NULL);
         perror("execlp");
@@ -264,16 +264,26 @@ int render_init(render_context_t *context, params_t *params) {
     glBindBuffer(GL_ARRAY_BUFFER, context->particle_vbo);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(particle_t),
-                          (GLvoid*)offsetof(particle_t, px));
+                          (GLvoid*)offsetof(particle_t, pos));
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(particle_t),
-                          (GLvoid*)offsetof(particle_t, vx));
+                          (GLvoid*)offsetof(particle_t, vel));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
-                          (GLvoid*)offsetof(particle_t, rotation));
+                          (GLvoid*)offsetof(particle_t, rot));
     glEnableVertexAttribArray(3);
-    glVertexAttribIPointer(3, 1, GL_INT, sizeof(particle_t),
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, rvel));
+    glEnableVertexAttribArray(4);
+    glVertexAttribIPointer(4, 1, GL_INT, sizeof(particle_t),
                            (GLvoid*)offsetof(particle_t, type));
+
+    glGenBuffers(1, &context->particle_ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, context->particle_ubo);
+    glBufferData(GL_UNIFORM_BUFFER, context->params->num_particle_types * sizeof(render_spine_t),
+                 context->particle_spines, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    
     if (compile_shader_program(&context->particle_program,
                                inst_vert_glsl, inst_vert_glsl_len,
                                inst_geom_glsl, inst_geom_glsl_len,

@@ -6,7 +6,7 @@ OBJ_DIR=obj
 BIN_DIR=bin
 SRC_DIR=src
 
-INCLUDE_DIRS=-I./src -I./glad/include -I./glm -I./obj/shaders
+INCLUDE_DIRS=-I./src -I./inc
 LD_FLAGS=-lGL -lglfw -lm
 
 .PHONY: default clean_all clean debug
@@ -22,7 +22,7 @@ SHADER_SRCS = $(SRC_DIR)/shaders/inst_vert.glsl $(SRC_DIR)/shaders/inst_geom.gls
 	$(SRC_DIR)/shaders/inst_frag.glsl $(SRC_DIR)/shaders/quad_vert.glsl \
 	$(SRC_DIR)/shaders/gaus_frag.glsl $(SRC_DIR)/nbody.cl
 
-DTWIN_SRCS = $(SRC_DIR)/dtwin.c $(SRC_DIR)/render.c $(SRC_DIR)/nbody.c
+DTWIN_SRCS = $(SRC_DIR)/dtwin.c $(SRC_DIR)/render.c $(SRC_DIR)/nbody.c $(SRC_DIR)/glad.c
 DTWIN_OBJS = $(DTWIN_SRCS:src/%.c=obj/%.o)
 DTWIN_DEPS = $(DTWIN_OBJS:%.o=%.d)
 -include $(DTWIN_DEPS)
@@ -39,7 +39,7 @@ obj/%.o: src/%.c
 $(BIN_DIR)/dtwin: obj/dtwin.o $(DTWIN_OBJS) obj/shaders.o
 	@mkdir -p $(dir $@)
 	@mkdir -p $(OUT_DIR)
-	$(CC) -o $@ glad/src/glad.c obj/shaders.o $(DTWIN_OBJS) $(CFLAGS)
+	$(CC) -o $@ obj/shaders.o $(DTWIN_OBJS) $(CFLAGS)
 
 clean_all: clean
 	rm -rf ./$(OUT_DIR)/*

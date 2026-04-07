@@ -1,12 +1,39 @@
 
 #include "render.h"
 #include "nbody.h"
+#include "rand.h"
 #include "param.h"
+#include <time.h>
 #include <stdio.h>
 #include <sys/time.h>
 
 const char *VIDEO_OUT_FNAME = "./out/test.mp4";
 const char *META_OUT_FNAME = "./out/test.meta";
+
+void gen_particles(nbody_hitbox_t *hbox_buf, render_spine_t *spine_buf, int n)
+{
+	rand_state s = splitmix64(time(NULL));
+	int pidx, vidx;
+
+	for (pidx = 0; pidx < n; pidx++) {
+		// random spine of points
+		spine_buf[pidx].px[0] = -0.3f;
+		spine_buf[pidx].py[0] = 0.0f;
+		for (vidx = 1; vidx < MAX_RENDER_HBOX_LEN; vidx++) {
+			spine_buf[pidx].px[vidx] = rand_norm_pair(&s, 0.0f, 0.1).f1;
+			spine_buf[pidx].py[vidx] = 0.3f - 0.6f * vidx / MAX_RENDER_HBOX_LEN
+			                           + rand_norm_pair(&s, 0.0f, 0.1).f1;
+		}
+		spine_buf[pidx].px[vidx] = 1.0f;
+		spine_buf[pidx].py[vidx] = 0.0f;
+
+		// dumb hitbox
+		hbox_buf[pidx].px[0] = -0.3f;
+		hbox_buf[pidx].py[0] = 0.0f;
+		hbox_buf[pidx].px[1] = 1.0f;
+		hbox_buf[pidx].py[1] = 0.0f;
+	}
+}
 
 /**
  * @brief Runs a single simulation, rendering the output to an mp4 file.
@@ -101,8 +128,10 @@ int main()
 	char meta_path_buf[128];
 	int result = 0;
 	render_context_t render_ctx;
+	render_spine_t *spines;
+	nbody_hitbox_t *hboxes;
 	params_t dtwin_params = {
-		.scale = 0.2,
+		.scale = 0.02,
 		.res = 1200,
 
 		.aggr_prob = 0.1,
@@ -110,12 +139,20 @@ int main()
 		.accel_distr_sig = 0.1,
 		.mass_vel_scale = 0.5,
 		.vel_decay_rate = 0.9,
-		.particle_cnt = 5000,
+		.bounce_strength = 0.2,
+		.particle_cnt = 100,
+		.num_particle_types = 100,
 
 		.frame_cnt = 120,
-		.video_cnt = 5,
+		.video_cnt = 1,
 		.out_dir = "./out/ds"
 	};
+
+	if ((spines = malloc(dtwin_params.num_particle_types * sizeof(render_spine_t))) == 0) {
+		perror("malloc");
+		result = 1;
+		goto out;
+	}
 
 	if (render_init(&render_ctx, &dtwin_params) == -1) {
 		fprintf(stderr, "opengl context initialization failed\n");

@@ -20,6 +20,8 @@ This project has 4 main dependencies:
 
 This repository implements a Brownian motion particle simulator with tunable sticking parameters to allow for the creation of a near-unlimited amount of data for our colloidal aggregation detection machine learning model.
 
+The simulation region ranges from -1.0f to 1.0f in both x and y. This is true for both the physics simulation backend and the rendering frontend.
+
 ### Phyisics Simulation Backend
 
 The simulation backend runs entirely on the CPU. The backend handles the physical motion and aggregation of particles. Particles randomly move around in 2D space according to a Brownian motion simulation. The simulator tests for collisions between these particles and randomly decides whether the particles will clump together.

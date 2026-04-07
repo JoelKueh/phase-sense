@@ -11,7 +11,9 @@ typedef struct {
 	double accel_distr_sig;
 	double mass_vel_scale;
 	double vel_decay_rate;
+	double bounce_strength;
 	int particle_cnt;
+	int num_particle_types;
 
 	// video parameters
 	int frame_cnt;

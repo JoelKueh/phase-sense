@@ -10,15 +10,24 @@
 #include <GL/glx.h>
 #include <EGL/egl.h>
 
+#define MAX_RENDER_HBOX_LEN 8
+
 typedef struct {
     int pid;
     int pipefds[2];
 } ffmpeg_handle_t;
 
+// holds the data for a particle type, list of vertices
+typedef struct {
+	float px[MAX_RENDER_HBOX_LEN];
+	float py[MAX_RENDER_HBOX_LEN];
+} render_spine_t;
+
 typedef struct {
     ffmpeg_handle_t h_ffmpeg;
     uint8_t *ffmpeg_buf;
     params_t *params;
+    render_spine_t *particle_spines;
 
     // GLFW context and buffer outputs
     GLFWwindow *window;
@@ -31,6 +40,7 @@ typedef struct {
     // Particle attriube buffers
     GLuint particle_vao;     // Particle vertex array object.
     GLuint particle_vbo;     // Particle vertex buffer object.
+    GLuint particle_ubo;     // Particle uniform buffer object.
     GLuint particle_tree;    // Particle quad tree?
     GLuint empty_vao;        // Empty vao for a fullscreen quad.
 
