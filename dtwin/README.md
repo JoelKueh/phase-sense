@@ -61,7 +61,7 @@ simulation_1.mp4,0.25,1280x720
 
 The rendering frontend renders frames based on the particle data supplied by the backend. The rendering front end consists of the following phases:
 
-1. Particle Intantiation
+1. Particle Instantiation
   - Uses a geometry shader to instantiate particles provided their positions.
   - Particles are defined by their "spine" (strip of line segments) and a radius.
   - The way the particles manipulate light is modeled by a function on the distance from the spine.
@@ -70,3 +70,11 @@ The rendering frontend renders frames based on the particle data supplied by the
   - Motion blur is applied to the whole image using the velocity buffer.
 
 The rendering front end copies the rendered frames back to the CPU and writes them over a pipe to ffmpeg.
+
+## TODO
+
+1. Random blurring for focus changes in microscope.
+2. Particles have associated intensity value.
+3. Non-uniform particle lengths.
+4. Particles shapes should be more smooth (fewer points and only slight curve).
+4. Hitboxes should be accurate to the actual particle.
