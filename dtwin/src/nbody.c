@@ -84,21 +84,22 @@ bool line_intersect(vec2 p1, vec2 p2, vec2 p3, vec2 p4, vec2 intersect)
 
 	glm_vec2_sub(p2, p1, r);
 	glm_vec2_sub(p4, p3, s);
+	glm_vec2_sub(p3, p1, del);
 
 	float rxs = r[0] * s[1] - r[1] * s[0];
 	float delxr = del[0] * r[1] - del[1] * r[0];
 	float delxs = del[0] * s[1] - del[1] * s[0];
 
 	// lines are parallel if cross product is zero
-	if (rxs == 0) {
+	if (fabs(rxs) < 1e-12f) {
 		return false;
 	}
 
-	float t = delxr / rxs;
-	float u = delxs / rxs;
+	float t = delxs / rxs;
+	float u = delxr / rxs;
 
 	// lines do not intersect if parameterized t and u are out of range
-	if (t <= 0.0f || t >= 1.0f || u <= 0.0f || u >= 1.0f) {
+	if (t < 0.0f || t > 1.0f || u < 0.0f || u > 1.0f) {
 		return false;
 	}
 
@@ -111,7 +112,7 @@ bool line_intersect(vec2 p1, vec2 p2, vec2 p3, vec2 p4, vec2 intersect)
 // handles the collisison (or non-colliison) of two particles
 void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b)
 {
-	const float size = 0.8f;
+	const float size = 0.1f;
 	static vec2 hbox_s = { -size, 0.0f };
 	static vec2 hbox_f = {  size, 0.0f };
 
@@ -121,7 +122,7 @@ void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b
 	float angle;
 	
 	particle_t *part_a = &ctx->pbuf[particle_id_a];
-	particle_t *part_b = &ctx->pbuf[particle_id_a];
+	particle_t *part_b = &ctx->pbuf[particle_id_b];
 	
 	disj_cluster_node_t *clust_a = &ctx->disj_clusters[particle_id_a];
 	disj_cluster_node_t *clust_b = &ctx->disj_clusters[particle_id_b];
@@ -131,15 +132,15 @@ void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b
 	glm_vec2_rotate(hbox_s, part_b->rot, p3);
 	glm_vec2_rotate(hbox_f, part_b->rot, p4);
 
-	glm_vec2_add(p1, hbox_s, part_a->pos);
-	glm_vec2_add(p2, hbox_s, part_a->pos);
-	glm_vec2_add(p3, hbox_s, part_b->pos);
-	glm_vec2_add(p4, hbox_s, part_b->pos);
+	glm_vec2_add(p1, part_a->pos, p1);
+	glm_vec2_add(p2, part_a->pos, p2);
+	glm_vec2_add(p3, part_b->pos, p3);
+	glm_vec2_add(p4, part_b->pos, p4);
 
 	if (!line_intersect(p1, p2, p3, p4, intersect))
 		return;
 
-	if (rand_uniform_float(&ctx->rand_state, 0.0f, 1.0f) <= ctx->params->aggr_prob) {
+	if (rand_uniform_float(&ctx->rand_state, 0.0f, 1.0f) <= ctx->aggr_prob) {
 		disj_cluster_union(clust_a, clust_b);
 		return;
 	}
@@ -223,6 +224,7 @@ void part_pos_walk(nbody_context_t *ctx, float dt)
 
 	// loop over all particles and update positions
 	for (i = 0; i < ctx->params->particle_cnt; i++) {
+		part = &ctx->pbuf[i];
 		part->pos[0] += part->vel[0] * dt;
 		part->pos[1] += part->vel[1] * dt;
 	}
@@ -275,6 +277,7 @@ int nbody_init(nbody_context_t *ctx, params_t *params)
 
 	// initialize the data in the particle and cluster buffers
 	bound = 1.0 / ctx->params->scale;
+	ctx->aggr_prob = params->pre_onset_aggr;
 	for (int i = 0; i < params->particle_cnt; i++) {
 		// position data belongs to the particle in the cluster
 		ctx->pbuf[i].pos[0] = rand_uniform_float(&ctx->rand_state, -bound, bound);
@@ -282,7 +285,7 @@ int nbody_init(nbody_context_t *ctx, params_t *params)
 		ctx->pbuf[i].vel[0] = 0.0f;
 		ctx->pbuf[i].vel[1] = 0.0f;
 		ctx->pbuf[i].rot = rand_uniform_float(&ctx->rand_state, -M_PI, M_PI);
-		ctx->pbuf[i].type = 0;
+		ctx->pbuf[i].type = rand_u32(&ctx->rand_state) % ctx->params->num_ptypes;
 
 		// velocity data belongs to the cluster itself
 		ctx->disj_clusters[i].parent = &ctx->disj_clusters[i]; // each particle is a cluster
@@ -300,8 +303,11 @@ int nbody_init(nbody_context_t *ctx, params_t *params)
 
 float nbody_update(nbody_context_t *ctx, float dt)
 {
-	// part_vel_walk(ctx, dt);
-	// part_pair_walk(ctx);
+	if (rand_uniform_float(&ctx->rand_state, 0.0f, 1.0f) < ctx->params->onset_prob)
+		ctx->aggr_prob = ctx->params->post_onset_aggr;
+	part_vel_walk(ctx, dt);
+	part_pair_walk(ctx);
+	part_pos_walk(ctx, dt);
 	return emergence_idx(ctx);
 }
 

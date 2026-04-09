@@ -38,7 +38,7 @@ void main()
 
     fVel = vVel[0];
     for (int i = 0; i < 4; i++) {
-        gl_Position = (gl_in[0].gl_Position + vec4(ROT * OFFSETS[i], 0.0, 0.0)) * scale;
+        gl_Position = gl_in[0].gl_Position + scale * vec4(ROT * OFFSETS[i], 0.0, 0.0);
         uv = UV_COORDS[i];
         EmitVertex();
     }

@@ -10,7 +10,7 @@
 #include <GL/glx.h>
 #include <EGL/egl.h>
 
-#define MAX_RENDER_HBOX_LEN 8
+#define MAX_SPINE_LEN 8
 
 typedef struct {
     int pid;
@@ -19,8 +19,8 @@ typedef struct {
 
 // holds the data for a particle type, list of vertices
 typedef struct {
-	float px[MAX_RENDER_HBOX_LEN];
-	float py[MAX_RENDER_HBOX_LEN];
+	float px[MAX_SPINE_LEN];
+	float py[MAX_SPINE_LEN];
 } render_spine_t;
 
 typedef struct {
@@ -40,7 +40,7 @@ typedef struct {
     // Particle attriube buffers
     GLuint particle_vao;     // Particle vertex array object.
     GLuint particle_vbo;     // Particle vertex buffer object.
-    GLuint particle_ubo;     // Particle uniform buffer object.
+    GLuint particle_ssbo;    // Particle shader storage buffer object.
     GLuint particle_tree;    // Particle quad tree?
     GLuint empty_vao;        // Empty vao for a fullscreen quad.
 
@@ -62,7 +62,7 @@ typedef struct {
  * @param context A renderer context that can be used later.
  * @return 0 on success or -1 on error.
  */
-int render_init(render_context_t *context, params_t *params);
+int render_init(render_context_t *context, params_t *params, render_spine_t *spines);
 
 /**
  * @brief Initializes the render pipeline to feed data to out_path.

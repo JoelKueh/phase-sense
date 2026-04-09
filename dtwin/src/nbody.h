@@ -39,6 +39,7 @@ typedef struct {
 	rand_state rand_state;
 	params_t *params;
 	particle_t *pbuf;
+	double aggr_prob;
 	nbody_hitbox_t *ptypebuf;
 	disj_cluster_node_t *disj_clusters;
 } nbody_context_t;

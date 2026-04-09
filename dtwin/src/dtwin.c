@@ -14,17 +14,19 @@ void gen_particles(nbody_hitbox_t *hbox_buf, render_spine_t *spine_buf, int n)
 {
 	rand_state s = splitmix64(time(NULL));
 	int pidx, vidx;
+	float delx, dely;
 
 	for (pidx = 0; pidx < n; pidx++) {
 		// random spine of points
 		spine_buf[pidx].px[0] = -0.3f;
 		spine_buf[pidx].py[0] = 0.0f;
-		for (vidx = 1; vidx < MAX_RENDER_HBOX_LEN; vidx++) {
-			spine_buf[pidx].px[vidx] = rand_norm_pair(&s, 0.0f, 0.1).f1;
-			spine_buf[pidx].py[vidx] = 0.3f - 0.6f * vidx / MAX_RENDER_HBOX_LEN
-			                           + rand_norm_pair(&s, 0.0f, 0.1).f1;
+		for (vidx = 1; vidx < MAX_SPINE_LEN-1; vidx++) {
+			delx = rand_norm_pair(&s, 0.0f, 0.02).f1;
+			dely = rand_norm_pair(&s, 0.0f, 0.02).f2;
+			spine_buf[pidx].px[vidx] = -0.3f + 0.6f * vidx / (MAX_SPINE_LEN-1) + delx;
+			spine_buf[pidx].py[vidx] = spine_buf[pidx].py[vidx] + dely;
 		}
-		spine_buf[pidx].px[vidx] = 1.0f;
+		spine_buf[pidx].px[vidx] = 0.3f;
 		spine_buf[pidx].py[vidx] = 0.0f;
 
 		// dumb hitbox
@@ -131,30 +133,41 @@ int main()
 	render_spine_t *spines;
 	nbody_hitbox_t *hboxes;
 	params_t dtwin_params = {
-		.scale = 0.02,
+		.scale = 0.35,
 		.res = 1200,
 
-		.aggr_prob = 0.1,
+		.pre_onset_aggr = 0.0,
+		.post_onset_aggr = 0.4,
+		.onset_prob = 0.01,
+		
 		.accel_distr_mu = 0.0,
-		.accel_distr_sig = 0.1,
+		.accel_distr_sig = 0.2,
 		.mass_vel_scale = 0.5,
 		.vel_decay_rate = 0.9,
 		.bounce_strength = 0.2,
-		.particle_cnt = 100,
-		.num_particle_types = 100,
+		.particle_cnt = 150,
+		.num_ptypes = 100,
 
-		.frame_cnt = 120,
+		.frame_cnt = 1200,
+		.fps = 60,
 		.video_cnt = 1,
 		.out_dir = "./out/ds"
 	};
 
-	if ((spines = malloc(dtwin_params.num_particle_types * sizeof(render_spine_t))) == 0) {
+	if ((spines = malloc(dtwin_params.num_ptypes * sizeof(render_spine_t))) == 0) {
 		perror("malloc");
 		result = 1;
 		goto out;
 	}
 
-	if (render_init(&render_ctx, &dtwin_params) == -1) {
+	if ((hboxes = malloc(dtwin_params.num_ptypes * sizeof(nbody_hitbox_t))) == 0) {
+		perror("malloc");
+		result = 1;
+		goto out;
+	}
+
+	gen_particles(hboxes, spines, dtwin_params.num_ptypes);
+	if (render_init(&render_ctx, &dtwin_params, spines) == -1) {
 		fprintf(stderr, "opengl context initialization failed\n");
 		result = 1;
 		goto out;

@@ -30,7 +30,7 @@ static void glfw_error_callback(int error, const char *description) {
 }
 
 int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
-                const char *const fname) {
+                const char *const fname, const char *const fps) {
     // Open the pipe for streaming data to ffmepg
     if (pipe(handle->pipefds)) {
         perror("pipe");
@@ -47,8 +47,8 @@ int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
     } else if (handle->pid == 0) {
         close(handle->pipefds[1]);
         dup2(handle->pipefds[0], STDIN_FILENO);
-        execlp(FFMPEG_PATH, FFMPEG_PATH, "-loglevel", "quiet", "-f", "rawvideo", "-pix_fmt",
-               "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname, "-y", NULL);
+        execlp(FFMPEG_PATH, FFMPEG_PATH, "-loglevel", "error", "-f", "rawvideo", "-pix_fmt",
+               "rgba", "-framerate", fps, "-s", resolution, "-i", "-", fname, "-y", NULL);
         // execlp(FFMPEG_PATH, FFMPEG_PATH, "-f", "rawvideo", "-pix_fmt",
         //        "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname, NULL);
         perror("execlp");
@@ -168,13 +168,14 @@ out:
     return result;
 }
 
-int render_init(render_context_t *context, params_t *params) {
+int render_init(render_context_t *context, params_t *params, render_spine_t *spines) {
     const GLenum inst_buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     const GLenum draw_buffers[2] = {GL_COLOR_ATTACHMENT0};
     int result = 0;
 
     // Pass the parameter struct into the context
     context->params = params;
+    context->particle_spines = spines;
 
     // Create the GLFW context with no no visible window.
     glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
@@ -278,11 +279,11 @@ int render_init(render_context_t *context, params_t *params) {
     glVertexAttribIPointer(4, 1, GL_INT, sizeof(particle_t),
                            (GLvoid*)offsetof(particle_t, type));
 
-    glGenBuffers(1, &context->particle_ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, context->particle_ubo);
-    glBufferData(GL_UNIFORM_BUFFER, context->params->num_particle_types * sizeof(render_spine_t),
+    glGenBuffers(1, &context->particle_ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, context->particle_ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, context->params->num_ptypes * sizeof(render_spine_t),
                  context->particle_spines, GL_STATIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     
     if (compile_shader_program(&context->particle_program,
                                inst_vert_glsl, inst_vert_glsl_len,
@@ -314,6 +315,7 @@ out:
 
 int render_open_output(render_context_t *context, const char fname[]) {
     char res_buf[16] = "";
+    char fps_buf[16] = "";
 
     if ((context->ffmpeg_buf =
             (uint8_t*)malloc(context->params->res * context->params->res * 4)) == 0)
@@ -321,7 +323,8 @@ int render_open_output(render_context_t *context, const char fname[]) {
 
     snprintf(res_buf, sizeof(res_buf), "%dx%d",
              context->params->res, context->params->res);
-    if (ffmpeg_open(&context->h_ffmpeg, res_buf, fname) == -1)
+    snprintf(fps_buf, sizeof(res_buf), "%d", context->params->fps);
+    if (ffmpeg_open(&context->h_ffmpeg, res_buf, fname, fps_buf) == -1)
         return -1;
 
     return 0;
@@ -350,6 +353,7 @@ int render_frame(render_context_t *context) {
     loc_scale = glGetUniformLocation(context->particle_program, "scale");
     glUniform1f(loc_scale, context->params->scale);
     glBindVertexArray(context->particle_vao);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, context->particle_ssbo);
     glDrawArrays(GL_POINTS, 0, context->params->particle_cnt);
     glDisable(GL_BLEND);
 

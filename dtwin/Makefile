@@ -35,7 +35,6 @@ obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) -MMD -MP -MF $(@:.o=.d) -c -o $@ $< $(CFLAGS) 
 
-.PHONY: $(BIN_DIR)/dtwin
 $(BIN_DIR)/dtwin: obj/dtwin.o $(DTWIN_OBJS) obj/shaders.o
 	@mkdir -p $(dir $@)
 	@mkdir -p $(OUT_DIR)
