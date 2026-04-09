@@ -9,8 +9,6 @@
 #define M_PI 3.14159265358979323846
 #define MIN_COLLISION_DIST_SQ 0.01
 #define AGGREGATION_PROBABILITY 0.5
-#define ACCEL_MU 0.0
-#define ACCEL_SIGMA 0.05
 #define MASS_VEL_SCALE 1.0
 #define DRAG_COEFF 0.1
 #define BOUNCE_STRENGTH 0.05
@@ -203,15 +201,24 @@ void part_vel_walk(nbody_context_t *ctx, float dt)
 
 		// if the cluster has not been visited before, update velocity
 		if (!clust->updated) {
-			fpair = rand_norm_pair(&ctx->rand_state, ACCEL_MU, ACCEL_SIGMA);
-			clust->vel[0] = (clust->vel[0] * (1.0f - DRAG_COEFF)) + fpair.f1 * dt;
-			clust->vel[1] = (clust->vel[1] * (1.0f - DRAG_COEFF)) + fpair.f2 * dt;
+			fpair = rand_norm_pair(&ctx->rand_state, ctx->params->accel_distr_mu,
+			                       ctx->params->accel_distr_sig);
+			clust->vel[0] = (clust->vel[0] * (1.0f - ctx->params->drag_coeff))
+			                + fpair.f1 * dt / clust->mass;
+			clust->vel[1] = (clust->vel[1] * (1.0f - ctx->params->drag_coeff))
+			                + fpair.f2 * dt / clust->mass;
+
+			fpair = rand_norm_pair(&ctx->rand_state, ctx->params->raccel_distr_mu,
+			                       ctx->params->raccel_distr_sig);
+			clust->rvel = (clust->rvel * (1.0f - ctx->params->drag_coeff))
+							+ fpair.f1 * dt / clust->mass;
 			clust->updated = true;
 		}
 
 		// propagate the cluster velocity to the individual particle
 		part->vel[0] = clust->vel[0];
 		part->vel[1] = clust->vel[1];
+		part->rvel = clust->rvel;
 	}
 }
 
@@ -227,6 +234,7 @@ void part_pos_walk(nbody_context_t *ctx, float dt)
 		part = &ctx->pbuf[i];
 		part->pos[0] += part->vel[0] * dt;
 		part->pos[1] += part->vel[1] * dt;
+		part->rot += part->rvel * dt;
 	}
 }
 

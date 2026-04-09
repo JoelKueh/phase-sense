@@ -33,6 +33,7 @@ struct disj_cluster_node_t {
 
 	bool updated; // has this cluster been updated this frame
 	vec2 vel;     // the velocity of the particle
+	float rvel;   // the rotational velocity of the cluster
 };
 
 typedef struct {

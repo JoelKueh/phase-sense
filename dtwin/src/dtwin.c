@@ -141,9 +141,10 @@ int main()
 		.onset_prob = 0.01,
 		
 		.accel_distr_mu = 0.0,
-		.accel_distr_sig = 0.2,
-		.mass_vel_scale = 0.5,
-		.vel_decay_rate = 0.9,
+		.accel_distr_sig = 0.08,
+		.raccel_distr_mu = 0.0,
+		.raccel_distr_sig = 0.08,
+		.drag_coeff = 0.1,
 		.bounce_strength = 0.2,
 		.particle_cnt = 150,
 		.num_ptypes = 100,

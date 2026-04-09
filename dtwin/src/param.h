@@ -12,8 +12,10 @@ typedef struct {
 	
 	double accel_distr_mu;
 	double accel_distr_sig;
-	double mass_vel_scale;
-	double vel_decay_rate;
+	double raccel_distr_mu;
+	double raccel_distr_sig;
+
+	double drag_coeff;
 	double bounce_strength;
 	int particle_cnt;
 	int num_ptypes;
