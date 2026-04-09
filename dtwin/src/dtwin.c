@@ -143,10 +143,10 @@ int main()
 		.accel_distr_mu = 0.0,
 		.accel_distr_sig = 0.08,
 		.raccel_distr_mu = 0.0,
-		.raccel_distr_sig = 0.08,
+		.raccel_distr_sig = 0.15,
 		.drag_coeff = 0.1,
-		.bounce_strength = 0.2,
-		.particle_cnt = 150,
+		.bounce_strength = 0.0,
+		.particle_cnt = 250,
 		.num_ptypes = 100,
 
 		.frame_cnt = 1200,

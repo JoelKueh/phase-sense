@@ -7,11 +7,6 @@
 #include "nbody.h"
 
 #define M_PI 3.14159265358979323846
-#define MIN_COLLISION_DIST_SQ 0.01
-#define AGGREGATION_PROBABILITY 0.5
-#define MASS_VEL_SCALE 1.0
-#define DRAG_COEFF 0.1
-#define BOUNCE_STRENGTH 0.05
 
 // finds the representetive element of a cluster (performs path compression)
 disj_cluster_node_t *disj_cluster_find(disj_cluster_node_t *node)
@@ -110,12 +105,12 @@ bool line_intersect(vec2 p1, vec2 p2, vec2 p3, vec2 p4, vec2 intersect)
 // handles the collisison (or non-colliison) of two particles
 void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b)
 {
-	const float size = 0.1f;
+	const float size = 0.10f;
 	static vec2 hbox_s = { -size, 0.0f };
 	static vec2 hbox_f = {  size, 0.0f };
 
 	vec2 p1, p2, p3, p4, intersect;
-	vec2 delta;
+	vec2 delta, delta_a, delta_b;
 	vec2 v1, v3;
 	float angle;
 	
@@ -150,10 +145,12 @@ void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b
 
 	// TODO: Bounce off with rotation and not just position
 	glm_vec2_sub(p1, p3, delta);
+	glm_vec2_scale(delta, ctx->params->bounce_strength, delta);
+	glm_vec2_scale(delta, 1.0f / clust_a->mass, delta_a);
+	glm_vec2_scale(delta, 1.0f / clust_b->mass, delta_b);
 	glm_vec2_normalize(delta);
-	glm_vec2_scale(delta, BOUNCE_STRENGTH, delta);
-	glm_vec2_add(part_a->vel, delta, part_a->vel);
-	glm_vec2_sub(part_a->vel, delta, part_b->vel);
+	glm_vec2_add(clust_a->vel, delta_a, clust_a->vel);
+	glm_vec2_sub(clust_b->vel, delta_b, clust_b->vel);
 }
 
 // walks through the all particle pairs, computing collisions and interparticle forces
@@ -187,6 +184,7 @@ void part_vel_walk(nbody_context_t *ctx, float dt)
 	disj_cluster_node_t *clust;
 	particle_t *part;
 	float_pair_t fpair;
+	vec2 delta;
 	int i;
 
 	// loop over all clusters and set updated flag to 0
@@ -199,7 +197,7 @@ void part_vel_walk(nbody_context_t *ctx, float dt)
 		clust = disj_cluster_find(&ctx->disj_clusters[i]);
 		part = &ctx->pbuf[i];
 
-		// if the cluster has not been visited before, update velocity
+		// if the cluster has not been visited before, update velocity and com
 		if (!clust->updated) {
 			fpair = rand_norm_pair(&ctx->rand_state, ctx->params->accel_distr_mu,
 			                       ctx->params->accel_distr_sig);
@@ -207,6 +205,8 @@ void part_vel_walk(nbody_context_t *ctx, float dt)
 			                + fpair.f1 * dt / clust->mass;
 			clust->vel[1] = (clust->vel[1] * (1.0f - ctx->params->drag_coeff))
 			                + fpair.f2 * dt / clust->mass;
+			glm_vec2_scale(clust->vel, dt, delta);
+			glm_vec2_add(clust->com, delta, clust->com);
 
 			fpair = rand_norm_pair(&ctx->rand_state, ctx->params->raccel_distr_mu,
 			                       ctx->params->raccel_distr_sig);
@@ -214,11 +214,6 @@ void part_vel_walk(nbody_context_t *ctx, float dt)
 							+ fpair.f1 * dt / clust->mass;
 			clust->updated = true;
 		}
-
-		// propagate the cluster velocity to the individual particle
-		part->vel[0] = clust->vel[0];
-		part->vel[1] = clust->vel[1];
-		part->rvel = clust->rvel;
 	}
 }
 
@@ -227,14 +222,23 @@ void part_pos_walk(nbody_context_t *ctx, float dt)
 	disj_cluster_node_t *clust;
 	particle_t *part;
 	float_pair_t fpair;
+	vec2 delta;
 	int i;
 
 	// loop over all particles and update positions
 	for (i = 0; i < ctx->params->particle_cnt; i++) {
+		clust = disj_cluster_find(&ctx->disj_clusters[i]);
 		part = &ctx->pbuf[i];
-		part->pos[0] += part->vel[0] * dt;
-		part->pos[1] += part->vel[1] * dt;
-		part->rot += part->rvel * dt;
+
+		// handle cluster rotation
+		glm_vec2_sub(part->pos, clust->com, delta);
+		glm_vec2_rotate(delta, clust->rvel * dt, delta);
+		glm_vec2_add(clust->com, delta, part->pos);
+		part->rot -= clust->rvel * dt;
+
+		// handle cluster velocity
+		glm_vec2_scale(clust->vel, dt, delta);
+		glm_vec2_add(part->pos, delta, part->pos);
 	}
 }
 
@@ -299,8 +303,8 @@ int nbody_init(nbody_context_t *ctx, params_t *params)
 		ctx->disj_clusters[i].parent = &ctx->disj_clusters[i]; // each particle is a cluster
 		ctx->disj_clusters[i].rank = 0; // clusters rank 0
 		ctx->disj_clusters[i].mass = 1.0f; // clusters mass 1
-		ctx->disj_clusters[i].com[0] = 0.0f; // clusters com is (0, 0)
-		ctx->disj_clusters[i].com[1] = 0.0f; // clusters com is (0, 0)
+		ctx->disj_clusters[i].com[0] = ctx->pbuf[i].pos[0];
+		ctx->disj_clusters[i].com[1] = ctx->pbuf[i].pos[1];
 		ctx->disj_clusters[i].updated = false; // redundant (see part_vel_walk)
 		ctx->disj_clusters[i].vel[0] = rand_uniform_float(&ctx->rand_state, -0.1, 0.1);
 		ctx->disj_clusters[i].vel[1] = rand_uniform_float(&ctx->rand_state, -0.1, 0.1);
@@ -313,8 +317,8 @@ float nbody_update(nbody_context_t *ctx, float dt)
 {
 	if (rand_uniform_float(&ctx->rand_state, 0.0f, 1.0f) < ctx->params->onset_prob)
 		ctx->aggr_prob = ctx->params->post_onset_aggr;
-	part_vel_walk(ctx, dt);
 	part_pair_walk(ctx);
+	part_vel_walk(ctx, dt);
 	part_pos_walk(ctx, dt);
 	return emergence_idx(ctx);
 }
