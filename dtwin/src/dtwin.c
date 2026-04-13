@@ -138,18 +138,18 @@ int main()
 
 		.pre_onset_aggr = 0.0,
 		.post_onset_aggr = 0.05,
-		.onset_prob = 0.01,
+		.onset_prob = 0.5,
 		
 		.accel_distr_mu = 0.0,
 		.accel_distr_sig = 0.08,
 		.raccel_distr_mu = 0.0,
 		.raccel_distr_sig = 0.15,
 		.drag_coeff = 0.1,
-		.bounce_strength = 0.1,
+		.bounce_strength = 0.15,
 		.particle_cnt = 250,
 		.num_ptypes = 100,
 
-		.frame_cnt = 2000,
+		.frame_cnt = 4000,
 		.fps = 60,
 		.video_cnt = 1,
 		.out_dir = "./out/ds"

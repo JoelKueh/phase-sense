@@ -78,3 +78,4 @@ The rendering front end copies the rendered frames back to the CPU and writes th
 3. Non-uniform particle lengths.
 4. Particles shapes should be more smooth (fewer points and only slight curve).
 4. Hitboxes should be accurate to the actual particle.
+5. Motion blur.

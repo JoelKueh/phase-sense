@@ -105,7 +105,7 @@ bool line_intersect(vec2 p1, vec2 p2, vec2 p3, vec2 p4, vec2 intersect)
 // handles the collisison (or non-colliison) of two particles
 void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b)
 {
-	const float size = 0.10f;
+	const float size = 0.2f;
 	static vec2 hbox_s = { -size, 0.0f };
 	static vec2 hbox_f = {  size, 0.0f };
 
@@ -255,7 +255,7 @@ float emergence_idx(nbody_context_t *ctx)
 	}
 
 	for (i = 0; i < ctx->params->particle_cnt; i++) {
-		node = &ctx->disj_clusters[i];
+		node = disj_cluster_find(&ctx->disj_clusters[i]);
 		if (node->updated == false) {
 			total_mass += node->mass;
 			node->updated = true;

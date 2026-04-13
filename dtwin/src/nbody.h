@@ -4,7 +4,7 @@
 #include "rand.h"
 #include "cglm/cglm.h"
 
-#define MAX_HITBOX_LEN 4
+#define MAX_HITBOX_LEN 8
 
 // holds the data for a particle, equivalent to that used in render vbo
 typedef struct {
