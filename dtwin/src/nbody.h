@@ -1,8 +1,8 @@
 #pragma once
 
+#include "cglm/vec2.h"
 #include "param.h"
 #include "rand.h"
-#include "cglm/cglm.h"
 
 #define SPINE_LEN 17
 
@@ -13,6 +13,7 @@ typedef struct {
 	float rot;
 	float rvel;
 	int type;
+	float intensity;
 } particle_t;
 
 // holds the data for a particle type, list of vertices

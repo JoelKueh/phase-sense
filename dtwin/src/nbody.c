@@ -1,10 +1,9 @@
 
-#include "cglm/vec2.h"
-#include "cglm/vec3.h"
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
 
+#include "cglm/vec2.h"
 #include "nbody.h"
 
 #define M_PI 3.14159265358979323846
