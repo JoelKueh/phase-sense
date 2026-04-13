@@ -11,8 +11,6 @@
 #include <GL/glx.h>
 #include <EGL/egl.h>
 
-#define SPINE_LEN 17
-
 typedef struct {
     int pid;
     int pipefds[2];

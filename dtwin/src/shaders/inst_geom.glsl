@@ -13,9 +13,8 @@ flat out vec2 fVel;
 flat out int fPartIdx;
 
 uniform float scale;
-const float OFF = 0.5;
 
-const vec2 UV_COORDS[4] = vec2[](
+const vec2 OFFSETS[4] = vec2[](
     vec2(-1, -1),
     vec2( 1, -1),
     vec2(-1,  1),
@@ -29,18 +28,11 @@ void main()
         sin(vRot[0]),  cos(vRot[0])
     );
 
-    const vec2 OFFSETS[4] = vec2[](
-        vec2(-OFF, -OFF),
-        vec2( OFF, -OFF),
-        vec2(-OFF,  OFF),
-        vec2( OFF,  OFF)
-    );
-
     fVel = vVel[0];
     fPartIdx = vPartIdx[0];
     for (int i = 0; i < 4; i++) {
         gl_Position = gl_in[0].gl_Position + scale * vec4(ROT * OFFSETS[i], 0.0, 0.0);
-        uv = UV_COORDS[i];
+        uv = OFFSETS[i];
         EmitVertex();
     }
     EndPrimitive();

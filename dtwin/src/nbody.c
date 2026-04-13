@@ -1,4 +1,5 @@
 
+#include "cglm/vec2.h"
 #include "cglm/vec3.h"
 #include <stdio.h>
 #include <time.h>
@@ -108,7 +109,7 @@ bool line_intersect(vec2 p1, vec2 p2, vec2 p3, vec2 p4, vec2 intersect)
 	float delxs = del[0] * s[1] - del[1] * s[0];
 
 	// lines are parallel if cross product is zero
-	if (fabs(rxs) < 1e-12f) {
+	if (fabsf(rxs) < 1e-12f) {
 		return false;
 	}
 
@@ -167,6 +168,10 @@ void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b
 
 	if (rand_uniform_float(&ctx->rand_state, 0.0f, 1.0f) <= ctx->aggr_prob) {
 		disj_cluster_union(clust_a, clust_b);
+		clust_a = disj_cluster_find(clust_a);
+		clust_b = disj_cluster_find(clust_b);
+		glm_vec2_copy(clust_a->vel, part_a->vel);
+		glm_vec2_copy(clust_b->vel, part_b->vel);
 		return;
 	}
 
@@ -266,7 +271,7 @@ void part_pos_walk(nbody_context_t *ctx, float dt)
 		glm_vec2_sub(part->pos, clust->com, delta);
 		glm_vec2_rotate(delta, clust->rvel * dt, delta);
 		glm_vec2_add(clust->com, delta, part->pos);
-		part->rot -= clust->rvel * dt;
+		part->rot += clust->rvel * dt;
 
 		// handle cluster velocity
 		glm_vec2_scale(clust->vel, dt, delta);
@@ -329,6 +334,7 @@ int nbody_init(nbody_context_t *ctx, params_t *params, spine_t *spines)
 		ctx->pbuf[i].vel[0] = 0.0f;
 		ctx->pbuf[i].vel[1] = 0.0f;
 		ctx->pbuf[i].rot = rand_uniform_float(&ctx->rand_state, -M_PI, M_PI);
+		ctx->pbuf[i].rvel = 0.0f;
 		ctx->pbuf[i].type = rand_u32(&ctx->rand_state) % ctx->params->num_ptypes;
 
 		// velocity data belongs to the cluster itself
@@ -340,6 +346,7 @@ int nbody_init(nbody_context_t *ctx, params_t *params, spine_t *spines)
 		ctx->disj_clusters[i].updated = false; // redundant (see part_vel_walk)
 		ctx->disj_clusters[i].vel[0] = rand_uniform_float(&ctx->rand_state, -0.1, 0.1);
 		ctx->disj_clusters[i].vel[1] = rand_uniform_float(&ctx->rand_state, -0.1, 0.1);
+		ctx->disj_clusters[i].rvel = 0.0f;
 	}
 
 	return 0;

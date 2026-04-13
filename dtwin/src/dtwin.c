@@ -148,11 +148,11 @@ int main()
 	render_context_t render_ctx;
 	spine_t *spines;
 	params_t dtwin_params = {
-		.scale = 0.35,
+		.scale = 0.15,
 		.res = 1200,
 
 		.pre_onset_aggr = 0.0,
-		.post_onset_aggr = 0.05,
+		.post_onset_aggr = 1.0,
 		.onset_prob = 0.5,
 
 		.particle_roughness = 0.05,
@@ -160,15 +160,15 @@ int main()
 		.particle_max_len = 0.8,
 		
 		.accel_distr_mu = 0.0,
-		.accel_distr_sig = 0.08,
+		.accel_distr_sig = 0.1,
 		.raccel_distr_mu = 0.0,
-		.raccel_distr_sig = 0.15,
+		.raccel_distr_sig = 0.3,
 		.drag_coeff = 0.1,
-		.bounce_strength = 0.15,
-		.particle_cnt = 250,
+		.bounce_strength = 0.00001,
+		.particle_cnt = 200,
 		.num_ptypes = 100,
 
-		.frame_cnt = 1200,
+		.frame_cnt = 500,
 		.fps = 60,
 		.video_cnt = 1,
 		.out_dir = "./out/ds"
