@@ -1,6 +1,7 @@
 #pragma once
 
 #include "param.h"
+#include "nbody.h"
 #include "glad/glad.h"
 #include <stdlib.h>
 #define GLFW_EXPOSE_NATIVE_X11
@@ -10,24 +11,18 @@
 #include <GL/glx.h>
 #include <EGL/egl.h>
 
-#define MAX_SPINE_LEN 17
+#define SPINE_LEN 17
 
 typedef struct {
     int pid;
     int pipefds[2];
 } ffmpeg_handle_t;
 
-// holds the data for a particle type, list of vertices
-typedef struct {
-	float px[MAX_SPINE_LEN];
-	float py[MAX_SPINE_LEN];
-} render_spine_t;
-
 typedef struct {
     ffmpeg_handle_t h_ffmpeg;
     uint8_t *ffmpeg_buf;
     params_t *params;
-    render_spine_t *particle_spines;
+    spine_t *spines;
 
     // GLFW context and buffer outputs
     GLFWwindow *window;
@@ -62,7 +57,7 @@ typedef struct {
  * @param context A renderer context that can be used later.
  * @return 0 on success or -1 on error.
  */
-int render_init(render_context_t *context, params_t *params, render_spine_t *spines);
+int render_init(render_context_t *context, params_t *params, spine_t *spines);
 
 /**
  * @brief Initializes the render pipeline to feed data to out_path.

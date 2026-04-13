@@ -1,13 +1,13 @@
 #version 430 core
 
-#define MAX_SPINE_LEN 17
+#define SPINE_LEN 17
 
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec2 FragVelocity;
 
 struct render_spine_t {
-	float px[MAX_SPINE_LEN];
-	float py[MAX_SPINE_LEN];
+	float px[SPINE_LEN];
+	float py[SPINE_LEN];
 };
 
 layout (std430, binding = 0) readonly buffer SpineUBO
@@ -46,7 +46,7 @@ void main()
     vec2 s1, s2;
     int i;
 
-    for (i = 0; i < MAX_SPINE_LEN-1; i++ ) {
+    for (i = 0; i < SPINE_LEN-1; i++ ) {
         s1 = vec2(spines[fPartIdx].px[i], spines[fPartIdx].py[i]);
         s2 = vec2(spines[fPartIdx].px[i+1], spines[fPartIdx].py[i+1]);
         new_dist = seg_dist(s1, s2, uv);

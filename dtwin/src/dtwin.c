@@ -10,7 +10,7 @@
 const char *VIDEO_OUT_FNAME = "./out/test.mp4";
 const char *META_OUT_FNAME = "./out/test.meta";
 
-void gen_spine(rand_state *s, render_spine_t *spine, int start_idx, int end_idx, float roughness)
+void gen_spine(rand_state *s, spine_t *spine, int start_idx, int end_idx, float roughness)
 {
 	float distance, offset;
 	int mid_idx;
@@ -33,7 +33,7 @@ void gen_spine(rand_state *s, render_spine_t *spine, int start_idx, int end_idx,
 	gen_spine(s, spine, mid_idx, end_idx, roughness);
 }
 
-void gen_particles(params_t *params, nbody_hitbox_t *hbox_buf, render_spine_t *spine_buf, int n)
+void gen_particles(params_t *params, spine_t *spine_buf, int n)
 {
 	rand_state s = splitmix64(time(NULL));
 	int pidx, vidx;
@@ -47,9 +47,9 @@ void gen_particles(params_t *params, nbody_hitbox_t *hbox_buf, render_spine_t *s
 		// generate list of spines by repeated midpoint displacement.
 		spine_buf[pidx].px[0] = -length/2.0f;
 		spine_buf[pidx].py[0] = 0.0f;
-		spine_buf[pidx].px[MAX_SPINE_LEN-1] = length/2.0f;
-		spine_buf[pidx].py[MAX_SPINE_LEN-1] = 0.0f;
-		gen_spine(&s, &spine_buf[pidx], 0, MAX_SPINE_LEN-1, params->particle_roughness);
+		spine_buf[pidx].px[SPINE_LEN-1] = length/2.0f;
+		spine_buf[pidx].py[SPINE_LEN-1] = 0.0f;
+		gen_spine(&s, &spine_buf[pidx], 0, SPINE_LEN-1, params->particle_roughness);
 	}
 }
 
@@ -84,7 +84,7 @@ int simulate(render_context_t *render_ctx, const char video_path[], const char m
 	}
 
 	// initialize the nbody_simulation with the current parameters
-	if (nbody_init(&nbody_ctx, render_ctx->params)) {
+	if (nbody_init(&nbody_ctx, render_ctx->params, render_ctx->spines)) {
 		fprintf(stderr, "nbody_init: failed\n");
 		result = -1;
 		goto out_close_meta;
@@ -146,8 +146,7 @@ int main()
 	char meta_path_buf[128];
 	int result = 0;
 	render_context_t render_ctx;
-	render_spine_t *spines;
-	nbody_hitbox_t *hboxes;
+	spine_t *spines;
 	params_t dtwin_params = {
 		.scale = 0.35,
 		.res = 1200,
@@ -175,19 +174,13 @@ int main()
 		.out_dir = "./out/ds"
 	};
 
-	if ((spines = malloc(dtwin_params.num_ptypes * sizeof(render_spine_t))) == 0) {
+	if ((spines = malloc(dtwin_params.num_ptypes * sizeof(spine_t))) == 0) {
 		perror("malloc");
 		result = 1;
 		goto out;
 	}
 
-	if ((hboxes = malloc(dtwin_params.num_ptypes * sizeof(nbody_hitbox_t))) == 0) {
-		perror("malloc");
-		result = 1;
-		goto out;
-	}
-
-	gen_particles(&dtwin_params, hboxes, spines, dtwin_params.num_ptypes);
+	gen_particles(&dtwin_params, spines, dtwin_params.num_ptypes);
 	if (render_init(&render_ctx, &dtwin_params, spines) == -1) {
 		fprintf(stderr, "opengl context initialization failed\n");
 		result = 1;

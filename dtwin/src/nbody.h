@@ -4,7 +4,7 @@
 #include "rand.h"
 #include "cglm/cglm.h"
 
-#define MAX_HITBOX_LEN 8
+#define SPINE_LEN 17
 
 // holds the data for a particle, equivalent to that used in render vbo
 typedef struct {
@@ -17,9 +17,9 @@ typedef struct {
 
 // holds the data for a particle type, list of vertices
 typedef struct {
-	float px[MAX_HITBOX_LEN];
-	float py[MAX_HITBOX_LEN];
-} nbody_hitbox_t;
+	float px[SPINE_LEN];
+	float py[SPINE_LEN];
+} spine_t;
 
 typedef struct disj_cluster_node_t disj_cluster_node_t;
 struct disj_cluster_node_t {
@@ -41,10 +41,10 @@ typedef struct {
 	params_t *params;
 	particle_t *pbuf;
 	double aggr_prob;
-	nbody_hitbox_t *ptypebuf;
+	spine_t *spines;
 	disj_cluster_node_t *disj_clusters;
 } nbody_context_t;
 
-int nbody_init(nbody_context_t *ctx, params_t *params);
+int nbody_init(nbody_context_t *ctx, params_t *params, spine_t *spines);
 float nbody_update(nbody_context_t *ctx, float dt);
 void nbody_deinit(nbody_context_t *ctx);

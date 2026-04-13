@@ -68,6 +68,30 @@ float dist_sqr(float ax, float ay, float bx, float by)
 	return (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
 }
 
+// Distance to a line segment through points s1 s2.
+float seg_dist(vec2 s1, vec2 s2, vec2 p, vec2 intersect)
+{
+	vec2 pms1, s2ms1, delta;
+	float t;
+	
+	// compute the parameterized minimizatino point
+	glm_vec2_sub(p, s1, pms1);
+	glm_vec2_sub(s2, s1, s2ms1);
+	t = glm_vec2_dot(pms1, s2ms1) / glm_vec2_dot(s2ms1, s2ms1);
+	t = t < 0 ? 0.0f : t > 1 ? 1.0f : t;
+
+	// compute the delta vector
+	glm_vec2_scale(s2ms1, t, delta);
+	glm_vec2_add(s1, delta, delta);
+	glm_vec2_sub(delta, p, delta);
+
+	// compute the "intersection" ponit, halfway between the point and the line
+	glm_vec2_scale(delta, 0.5, intersect);
+	glm_vec2_add(p, intersect, intersect);
+
+	return glm_vec2_norm(delta);
+}
+
 // detects intersection between two lines
 // returns parameterized points in t and u
 // t and u range from 0 to 1.
@@ -105,13 +129,12 @@ bool line_intersect(vec2 p1, vec2 p2, vec2 p3, vec2 p4, vec2 intersect)
 // handles the collisison (or non-colliison) of two particles
 void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b)
 {
-	const float size = 0.2f;
-	static vec2 hbox_s = { -size, 0.0f };
-	static vec2 hbox_f = {  size, 0.0f };
 
 	vec2 p1, p2, p3, p4, intersect;
 	vec2 delta, delta_a, delta_b;
 	vec2 v1, v3;
+	vec2 hbox_s;
+	vec2 hbox_f;
 	float angle;
 	
 	particle_t *part_a = &ctx->pbuf[particle_id_a];
@@ -120,13 +143,22 @@ void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b
 	disj_cluster_node_t *clust_a = &ctx->disj_clusters[particle_id_a];
 	disj_cluster_node_t *clust_b = &ctx->disj_clusters[particle_id_b];
 
+	// hitbox is a stright line from the start point to the end piont
+	hbox_s[0] = ctx->spines[part_a->type].px[0];
+	hbox_s[1] = ctx->spines[part_a->type].py[0];
+	hbox_f[0] = ctx->spines[part_a->type].px[SPINE_LEN-1];
+	hbox_f[1] = ctx->spines[part_a->type].py[SPINE_LEN-1];
 	glm_vec2_rotate(hbox_s, part_a->rot, p1);
 	glm_vec2_rotate(hbox_f, part_a->rot, p2);
-	glm_vec2_rotate(hbox_s, part_b->rot, p3);
-	glm_vec2_rotate(hbox_f, part_b->rot, p4);
-
 	glm_vec2_add(p1, part_a->pos, p1);
 	glm_vec2_add(p2, part_a->pos, p2);
+
+	hbox_s[0] = ctx->spines[part_b->type].px[0];
+	hbox_s[1] = ctx->spines[part_b->type].py[0];
+	hbox_f[0] = ctx->spines[part_b->type].px[SPINE_LEN-1];
+	hbox_f[1] = ctx->spines[part_b->type].py[SPINE_LEN-1];
+	glm_vec2_rotate(hbox_s, part_b->rot, p3);
+	glm_vec2_rotate(hbox_f, part_b->rot, p4);
 	glm_vec2_add(p3, part_b->pos, p3);
 	glm_vec2_add(p4, part_b->pos, p4);
 
@@ -266,13 +298,13 @@ float emergence_idx(nbody_context_t *ctx)
 	return total_mass / cluster_count;
 }
 
-int nbody_init(nbody_context_t *ctx, params_t *params)
+int nbody_init(nbody_context_t *ctx, params_t *params, spine_t *spines)
 {
 	float_pair_t fpair;
 	float bound;
 
-	// initialize the randomizer
 	ctx->rand_state = splitmix64(time(NULL));
+	ctx->spines = spines;
 
 	// allocate host particle and cluster buffers
 	ctx->params = params;

@@ -168,14 +168,14 @@ out:
     return result;
 }
 
-int render_init(render_context_t *context, params_t *params, render_spine_t *spines) {
+int render_init(render_context_t *context, params_t *params, spine_t *spines) {
     const GLenum inst_buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     const GLenum draw_buffers[2] = {GL_COLOR_ATTACHMENT0};
     int result = 0;
 
     // Pass the parameter struct into the context
     context->params = params;
-    context->particle_spines = spines;
+    context->spines = spines;
 
     // Create the GLFW context with no no visible window.
     glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
@@ -281,8 +281,8 @@ int render_init(render_context_t *context, params_t *params, render_spine_t *spi
 
     glGenBuffers(1, &context->particle_ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, context->particle_ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, context->params->num_ptypes * sizeof(render_spine_t),
-                 context->particle_spines, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, context->params->num_ptypes * sizeof(spine_t),
+                 context->spines, GL_STATIC_DRAW);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     
     if (compile_shader_program(&context->particle_program,
