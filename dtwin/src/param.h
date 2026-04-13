@@ -9,6 +9,10 @@ typedef struct {
 	double pre_onset_aggr;
 	double post_onset_aggr;
 	double onset_prob;
+
+	double particle_roughness;
+	double particle_min_len;
+	double particle_max_len;
 	
 	double accel_distr_mu;
 	double accel_distr_sig;

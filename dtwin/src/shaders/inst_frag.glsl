@@ -1,6 +1,6 @@
 #version 430 core
 
-#define MAX_SPINE_LEN 8
+#define MAX_SPINE_LEN 17
 
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec2 FragVelocity;

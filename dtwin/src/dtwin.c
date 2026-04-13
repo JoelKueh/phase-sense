@@ -10,30 +10,46 @@
 const char *VIDEO_OUT_FNAME = "./out/test.mp4";
 const char *META_OUT_FNAME = "./out/test.meta";
 
-void gen_particles(nbody_hitbox_t *hbox_buf, render_spine_t *spine_buf, int n)
+void gen_spine(rand_state *s, render_spine_t *spine, int start_idx, int end_idx, float roughness)
+{
+	float distance, offset;
+	int mid_idx;
+	vec2 mid;
+	
+	if (end_idx <= start_idx + 1)
+		return;
+
+	mid_idx = (start_idx + end_idx) / 2;
+	distance = fabsf(spine->px[end_idx] - spine->px[start_idx]);
+	offset = rand_norm_pair(s, 0.0f, distance * roughness).f1;
+
+	mid[0] = (spine->px[start_idx] + spine->px[end_idx]) / 2.0f;
+	mid[1] = (spine->py[start_idx] + spine->py[end_idx]) / 2.0f;
+
+	spine->px[mid_idx] = mid[0];
+	spine->py[mid_idx] = mid[1] + offset;
+
+	gen_spine(s, spine, start_idx, mid_idx, roughness);
+	gen_spine(s, spine, mid_idx, end_idx, roughness);
+}
+
+void gen_particles(params_t *params, nbody_hitbox_t *hbox_buf, render_spine_t *spine_buf, int n)
 {
 	rand_state s = splitmix64(time(NULL));
 	int pidx, vidx;
 	float delx, dely;
+	float length;
 
 	for (pidx = 0; pidx < n; pidx++) {
-		// random spine of points
-		spine_buf[pidx].px[0] = -0.3f;
-		spine_buf[pidx].py[0] = 0.0f;
-		for (vidx = 1; vidx < MAX_SPINE_LEN-1; vidx++) {
-			delx = rand_norm_pair(&s, 0.0f, 0.02).f1;
-			dely = rand_norm_pair(&s, 0.0f, 0.02).f2;
-			spine_buf[pidx].px[vidx] = -0.3f + 0.6f * vidx / (MAX_SPINE_LEN-1) + delx;
-			spine_buf[pidx].py[vidx] = spine_buf[pidx].py[vidx] + dely;
-		}
-		spine_buf[pidx].px[vidx] = 0.3f;
-		spine_buf[pidx].py[vidx] = 0.0f;
+		// compute particle spines via repeated midpoint displacement.
+		length = rand_uniform_float(&s, params->particle_min_len, params->particle_max_len);
 
-		// dumb hitbox
-		hbox_buf[pidx].px[0] = -0.3f;
-		hbox_buf[pidx].py[0] = 0.0f;
-		hbox_buf[pidx].px[1] = 1.0f;
-		hbox_buf[pidx].py[1] = 0.0f;
+		// generate list of spines by repeated midpoint displacement.
+		spine_buf[pidx].px[0] = -length/2.0f;
+		spine_buf[pidx].py[0] = 0.0f;
+		spine_buf[pidx].px[MAX_SPINE_LEN-1] = length/2.0f;
+		spine_buf[pidx].py[MAX_SPINE_LEN-1] = 0.0f;
+		gen_spine(&s, &spine_buf[pidx], 0, MAX_SPINE_LEN-1, params->particle_roughness);
 	}
 }
 
@@ -139,6 +155,10 @@ int main()
 		.pre_onset_aggr = 0.0,
 		.post_onset_aggr = 0.05,
 		.onset_prob = 0.5,
+
+		.particle_roughness = 0.05,
+		.particle_min_len = 0.01,
+		.particle_max_len = 0.8,
 		
 		.accel_distr_mu = 0.0,
 		.accel_distr_sig = 0.08,
@@ -149,7 +169,7 @@ int main()
 		.particle_cnt = 250,
 		.num_ptypes = 100,
 
-		.frame_cnt = 4000,
+		.frame_cnt = 1200,
 		.fps = 60,
 		.video_cnt = 1,
 		.out_dir = "./out/ds"
@@ -167,7 +187,7 @@ int main()
 		goto out;
 	}
 
-	gen_particles(hboxes, spines, dtwin_params.num_ptypes);
+	gen_particles(&dtwin_params, hboxes, spines, dtwin_params.num_ptypes);
 	if (render_init(&render_ctx, &dtwin_params, spines) == -1) {
 		fprintf(stderr, "opengl context initialization failed\n");
 		result = 1;

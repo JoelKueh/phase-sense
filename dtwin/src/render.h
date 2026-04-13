@@ -10,7 +10,7 @@
 #include <GL/glx.h>
 #include <EGL/egl.h>
 
-#define MAX_SPINE_LEN 8
+#define MAX_SPINE_LEN 17
 
 typedef struct {
     int pid;
