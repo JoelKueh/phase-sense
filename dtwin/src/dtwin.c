@@ -152,12 +152,14 @@ int main()
 		.res = 1200,
 
 		.pre_onset_aggr = 0.0,
-		.post_onset_aggr = 1.0,
+		.post_onset_aggr = 0.3,
 		.onset_prob = 0.5,
 
 		.particle_roughness = 0.05,
 		.particle_min_len = 0.01,
 		.particle_max_len = 0.8,
+		.particle_min_intensity = 0.5,
+		.particle_max_intensity = 1.5,
 		
 		.accel_distr_mu = 0.0,
 		.accel_distr_sig = 0.1,
@@ -168,7 +170,7 @@ int main()
 		.particle_cnt = 200,
 		.num_ptypes = 100,
 
-		.frame_cnt = 500,
+		.frame_cnt = 1500,
 		.fps = 60,
 		.video_cnt = 1,
 		.out_dir = "./out/ds"

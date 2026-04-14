@@ -13,6 +13,8 @@ typedef struct {
 	double particle_roughness;
 	double particle_min_len;
 	double particle_max_len;
+	double particle_min_intensity;
+	double particle_max_intensity;
 	
 	double accel_distr_mu;
 	double accel_distr_sig;

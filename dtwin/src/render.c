@@ -48,7 +48,10 @@ int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
         close(handle->pipefds[1]);
         dup2(handle->pipefds[0], STDIN_FILENO);
         execlp(FFMPEG_PATH, FFMPEG_PATH, "-loglevel", "error", "-f", "rawvideo", "-pix_fmt",
-               "rgba", "-framerate", fps, "-s", resolution, "-i", "-", fname, "-y", NULL);
+               "rgba", "-framerate", fps, "-s", resolution, "-i", "-", "-an", "-y", fname, NULL);
+        // execlp(FFMPEG_PATH, FFMPEG_PATH, "-loglevel", "error", "-f", "rawvideo", "-pix_fmt",
+        //        "rgba", "-framerate", fps, "-s", resolution, "-i", "-", "-c:v", "libx264",
+        //        "-preset", "slow", "-crf", "18", "-an", "-y", fname, NULL);
         // execlp(FFMPEG_PATH, FFMPEG_PATH, "-f", "rawvideo", "-pix_fmt",
         //        "rgba", "-framerate", "4", "-s", resolution, "-i", "-", fname, NULL);
         perror("execlp");
@@ -278,6 +281,9 @@ int render_init(render_context_t *context, params_t *params, spine_t *spines) {
     glEnableVertexAttribArray(4);
     glVertexAttribIPointer(4, 1, GL_INT, sizeof(particle_t),
                            (GLvoid*)offsetof(particle_t, type));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, intensity));
 
     glGenBuffers(1, &context->particle_ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, context->particle_ssbo);
@@ -371,14 +377,14 @@ int render_frame(render_context_t *context) {
     // glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
     // glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    // // PASS 3: Vertical PSF Blurring
+    // PASS 3: Vertical PSF Blurring
     // glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[1]);
     // glViewport(0, 0, context->res, context->res);
     // glClear(GL_COLOR_BUFFER_BIT);
     // glUniform2f(loc_dir, 0.0, 1.0);
     // glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[0]);
     // glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      
+
     // Read the buffer back from the GPU and write it to ffmpeg.
     // glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
     glReadBuffer(GL_COLOR_ATTACHMENT0);

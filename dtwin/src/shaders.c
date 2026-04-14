@@ -22,8 +22,3 @@ const char gaus_frag_glsl[] = {
 #embed "shaders/gaus_frag.glsl"
 };
 const unsigned int gaus_frag_glsl_len = sizeof(gaus_frag_glsl);
-
-const char cl_nbody_cu[] = {
-#embed "nbody.cl"
-};
-const unsigned int cl_nbody_cu_len = sizeof(cl_nbody_cu);

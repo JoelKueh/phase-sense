@@ -5,11 +5,13 @@ layout (location = 1) in vec2 aVel;
 layout (location = 2) in float aRot;
 layout (location = 3) in float aRvel;
 layout (location = 4) in int aPartIdx;
+layout (location = 5) in float aIntensity;
 
 flat out vec2 vVel;
 flat out float vRot;
 flat out float vRvel;
 flat out int vPartIdx;
+flat out float vIntensity;
 
 uniform float scale;
 
@@ -20,4 +22,5 @@ void main()
     vRot = aRot;
     vRvel = aRvel;
     vPartIdx = aPartIdx;
+    vIntensity = aIntensity;
 }

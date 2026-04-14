@@ -20,7 +20,7 @@ CFLAGS = $(INCLUDE_DIRS) $(LD_FLAGS) $(OPT_LEVEL) -std=c23
 
 SHADER_SRCS = $(SRC_DIR)/shaders/inst_vert.glsl $(SRC_DIR)/shaders/inst_geom.glsl \
 	$(SRC_DIR)/shaders/inst_frag.glsl $(SRC_DIR)/shaders/quad_vert.glsl \
-	$(SRC_DIR)/shaders/gaus_frag.glsl $(SRC_DIR)/nbody.cl
+	$(SRC_DIR)/shaders/gaus_frag.glsl
 
 DTWIN_SRCS = $(SRC_DIR)/dtwin.c $(SRC_DIR)/render.c $(SRC_DIR)/nbody.c $(SRC_DIR)/glad.c
 DTWIN_OBJS = $(DTWIN_SRCS:src/%.c=obj/%.o)

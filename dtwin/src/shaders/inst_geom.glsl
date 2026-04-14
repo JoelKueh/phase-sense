@@ -7,10 +7,12 @@ flat in vec2 vVel[];
 flat in float vRot[];
 flat in float vRvel[];
 flat in int vPartIdx[];
+flat in float vIntensity[];
 
 out vec2 uv;
 flat out vec2 fVel;
 flat out int fPartIdx;
+flat out float fIntensity;
 
 uniform float scale;
 
@@ -30,6 +32,7 @@ void main()
 
     fVel = vVel[0];
     fPartIdx = vPartIdx[0];
+    fIntensity = vIntensity[0];
     for (int i = 0; i < 4; i++) {
         gl_Position = gl_in[0].gl_Position + scale * vec4(ROT * OFFSETS[i], 0.0, 0.0);
         uv = OFFSETS[i];

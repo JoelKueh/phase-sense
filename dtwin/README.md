@@ -15,6 +15,7 @@ This project has 4 main dependencies:
 4. Runtime executalbe of ffmpeg added to the PATH
   - Packeged (and likely already installed) on most systems
   - Binaries are avaliable on the [FFMPEG website](https://www.ffmpeg.org/download.html)
+  - This MUST have the libx264 encoder!
 
 ## Design Philosophy
 
@@ -74,8 +75,12 @@ The rendering front end copies the rendered frames back to the CPU and writes th
 ## TODO
 
 1. Random blurring for focus changes in microscope.
-2. Particles have associated intensity value.
+~2. Particles have associated intensity value.~
 ~3. Non-uniform particle lengths.~
 ~4. Particles shapes should be more smooth (fewer points and only slight curve).~
 ~4. Hitboxes should be accurate to the actual particle.~
+  ~- Add radius for small particles~
 5. Motion blur.
+6. Particle bounce-off should be velocity aware.
+~7. Fix problem with poor quality compression~
+  - NOTE: Do this by having libx264 instead of libopenh264 for ffmpeg, way better.

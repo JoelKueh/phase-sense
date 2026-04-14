@@ -129,13 +129,14 @@ bool line_intersect(vec2 p1, vec2 p2, vec2 p3, vec2 p4, vec2 intersect)
 // handles the collisison (or non-colliison) of two particles
 void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b)
 {
-
+	const float particle_radius = 0.05;
 	vec2 p1, p2, p3, p4, intersect;
 	vec2 delta, delta_a, delta_b;
 	vec2 v1, v3;
 	vec2 hbox_s;
 	vec2 hbox_f;
 	float angle;
+	bool colliding;
 	
 	particle_t *part_a = &ctx->pbuf[particle_id_a];
 	particle_t *part_b = &ctx->pbuf[particle_id_b];
@@ -162,7 +163,19 @@ void handle_collision(nbody_context_t *ctx, int particle_id_a, int particle_id_b
 	glm_vec2_add(p3, part_b->pos, p3);
 	glm_vec2_add(p4, part_b->pos, p4);
 
-	if (!line_intersect(p1, p2, p3, p4, intersect))
+	colliding = false;
+	if (line_intersect(p1, p2, p3, p4, intersect))
+		colliding = true;
+	else if (seg_dist(p1, p2, p3, intersect) < 2 * particle_radius)
+		colliding = true;
+	else if (seg_dist(p1, p2, p4, intersect) < 2 * particle_radius)
+		colliding = true;
+	else if (seg_dist(p3, p4, p1, intersect) < 2 * particle_radius)
+		colliding = true;
+	else if (seg_dist(p3, p4, p2, intersect) < 2 * particle_radius)
+		colliding = true;
+		
+	if (!colliding)
 		return;
 
 	if (rand_uniform_float(&ctx->rand_state, 0.0f, 1.0f) <= ctx->aggr_prob) {
@@ -335,6 +348,9 @@ int nbody_init(nbody_context_t *ctx, params_t *params, spine_t *spines)
 		ctx->pbuf[i].rot = rand_uniform_float(&ctx->rand_state, -M_PI, M_PI);
 		ctx->pbuf[i].rvel = 0.0f;
 		ctx->pbuf[i].type = rand_u32(&ctx->rand_state) % ctx->params->num_ptypes;
+		ctx->pbuf[i].intensity = rand_uniform_float(&ctx->rand_state,
+		                                       		ctx->params->particle_min_intensity,
+		                                       		ctx->params->particle_max_intensity);
 
 		// velocity data belongs to the cluster itself
 		ctx->disj_clusters[i].parent = &ctx->disj_clusters[i]; // each particle is a cluster

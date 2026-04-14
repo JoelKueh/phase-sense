@@ -18,6 +18,7 @@ layout (std430, binding = 0) readonly buffer SpineUBO
 in vec2 uv;
 flat in vec2 fVel;
 flat in int fPartIdx;
+flat in float fIntensity;
 
 const float k_freq = 20.0f;
 const float k_decay = 20.0f;
@@ -52,6 +53,6 @@ void main()
         new_dist = seg_dist(s1, s2, uv);
         dist = new_dist < dist ? new_dist : dist;
     }
-    FragColor = vec4(vec3(sdf(dist)), 0.0);
+    FragColor = vec4(vec3(sdf(dist) * fIntensity), 0.0);
     FragVelocity = fVel;
 }
