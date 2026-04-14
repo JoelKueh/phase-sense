@@ -83,6 +83,14 @@ int simulate(render_context_t *render_ctx, const char video_path[], const char m
 		goto out_close_output;
 	}
 
+	// write the metadata header
+	fprintf(meta_output_file, "aggr_prob,%f,avg_len,%f,accel,%f,drag,%f,scale,%f,count,%d\n",
+	        render_ctx->params->post_onset_aggr,
+	        (render_ctx->params->particle_min_len + render_ctx->params->particle_max_len) * 0.5f,
+	        render_ctx->params->accel_distr_sig,
+	        render_ctx->params->drag_coeff,
+	        render_ctx->params->scale, render_ctx->params->particle_cnt);
+
 	// initialize the nbody_simulation with the current parameters
 	if (nbody_init(&nbody_ctx, render_ctx->params, render_ctx->spines)) {
 		fprintf(stderr, "nbody_init: failed\n");
@@ -147,13 +155,14 @@ int main()
 	int result = 0;
 	render_context_t render_ctx;
 	spine_t *spines;
+	rand_state s;
 	params_t dtwin_params = {
 		.scale = 0.15,
 		.res = 1200,
 
 		.pre_onset_aggr = 0.0,
 		.post_onset_aggr = 0.3,
-		.onset_prob = 0.5,
+		.onset_prob = 0.005,
 
 		.particle_roughness = 0.05,
 		.particle_min_len = 0.01,
@@ -166,15 +175,17 @@ int main()
 		.raccel_distr_mu = 0.0,
 		.raccel_distr_sig = 0.3,
 		.drag_coeff = 0.1,
-		.bounce_strength = 0.00001,
+		.bounce_strength = 0.001,
 		.particle_cnt = 200,
 		.num_ptypes = 100,
 
 		.frame_cnt = 1500,
 		.fps = 60,
-		.video_cnt = 1,
+		.video_cnt = 300,
 		.out_dir = "./out/ds"
 	};
+
+	s = splitmix64(time(NULL));
 
 	if ((spines = malloc(dtwin_params.num_ptypes * sizeof(spine_t))) == 0) {
 		perror("malloc");
@@ -190,6 +201,19 @@ int main()
 	}
 
 	for (int i = 0; i < dtwin_params.video_cnt; i++) {
+		// randomize a couple of important video parameters
+		dtwin_params.post_onset_aggr = rand_uniform_float(&s, 0.2, 0.8);
+		dtwin_params.particle_min_len = rand_uniform_float(&s, 0.1, 0.4)
+		                                * rand_uniform_float(&s, 0.01, 0.4);
+		dtwin_params.particle_max_len = rand_uniform_float(&s, 0.4, 0.8);
+		dtwin_params.accel_distr_sig = rand_uniform_float(&s, 0.01, 0.2);
+		dtwin_params.raccel_distr_sig = 3 * dtwin_params.accel_distr_sig;
+		dtwin_params.drag_coeff = rand_uniform_float(&s, 0.01, 0.2);
+		dtwin_params.scale = rand_uniform_float(&s, 0.1, 0.3);
+		dtwin_params.particle_cnt =
+			(4.0 + rand_uniform_float(&s, 0.0, 3.0)) / (dtwin_params.scale * dtwin_params.scale);
+		printf("%f, %d\n", dtwin_params.scale, dtwin_params.particle_cnt);
+		
 		fprintf(stderr, "Rendering Video %d/%d\n", i+1, dtwin_params.video_cnt);
 		snprintf(video_path_buf, sizeof(video_path_buf), "%s/%d.mp4",
 		         dtwin_params.out_dir, i);
