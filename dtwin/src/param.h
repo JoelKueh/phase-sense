@@ -1,4 +1,6 @@
 #pragma once
+#include <stdio.h>
+#include <string.h>
 
 typedef struct {
 	// window size parameters
@@ -30,5 +32,4 @@ typedef struct {
 	int frame_cnt;
 	int fps;
 	int video_cnt;
-	char *out_dir;
 } params_t;

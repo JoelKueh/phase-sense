@@ -148,42 +148,31 @@ out:
 	return result;
 }
 
-int main()
+int handle_args(int argc, char **argv, char *out_dir, params_t *sim_params);
+
+int main(int argc, char **argv)
 {
+
+	int result = 0;
+	params_t dtwin_params;
+	char out_dir[128];
+	switch(handle_args(argc, argv, out_dir, &dtwin_params)) {
+		case -1:
+			fprintf(stderr, "processing arguments failed\n");
+			result = 1;
+			goto out;
+		case -2:
+			result = 0;
+			goto out;
+		default:
+	}
+
 	char video_path_buf[128];
 	char meta_path_buf[128];
-	int result = 0;
 	render_context_t render_ctx;
 	spine_t *spines;
 	rand_state s;
-	params_t dtwin_params = {
-		.scale = 0.15,
-		.res = 1200,
 
-		.pre_onset_aggr = 0.0,
-		.post_onset_aggr = 0.3,
-		.onset_prob = 0.005,
-
-		.particle_roughness = 0.05,
-		.particle_min_len = 0.01,
-		.particle_max_len = 0.8,
-		.particle_min_intensity = 0.5,
-		.particle_max_intensity = 1.5,
-		
-		.accel_distr_mu = 0.0,
-		.accel_distr_sig = 0.1,
-		.raccel_distr_mu = 0.0,
-		.raccel_distr_sig = 0.3,
-		.drag_coeff = 0.1,
-		.bounce_strength = 0.001,
-		.particle_cnt = 200,
-		.num_ptypes = 100,
-
-		.frame_cnt = 1500,
-		.fps = 60,
-		.video_cnt = 300,
-		.out_dir = "./out/ds"
-	};
 
 	s = splitmix64(time(NULL));
 
@@ -216,9 +205,9 @@ int main()
 		
 		fprintf(stderr, "Rendering Video %d/%d\n", i+1, dtwin_params.video_cnt);
 		snprintf(video_path_buf, sizeof(video_path_buf), "%s/%d.mp4",
-		         dtwin_params.out_dir, i);
+		         out_dir, i);
 		snprintf(meta_path_buf, sizeof(meta_path_buf), "%s/%d.meta",
-		         dtwin_params.out_dir, i);
+		         out_dir, i);
 		if (simulate(&render_ctx, video_path_buf, meta_path_buf) == -1) {
 			fprintf(stderr, "simulation error\n");
 			result = 1;
@@ -232,3 +221,145 @@ out_render_deinit:
 out:
 	return result;
 }
+
+int read_sim_params(char *path, params_t *sim_params)
+{
+	FILE *par_f = fopen(path, "r");
+	if (par_f == NULL) {
+		perror("couldn't open provided file");
+		return -1;
+	}
+
+	char line[256];
+
+	while (fgets(line, sizeof(line), par_f)) {
+		char name[64];
+		double val;
+		if (sscanf(line, "%[^ ] = %lf", name, &val) != 2) {
+			continue;
+		}
+
+
+		// window size parameters
+		if (!strncmp("scale", name, 63)) 
+			sim_params->scale = val;
+		if (!strncmp("res", name, 63)) 
+			sim_params->res = (int) val;
+
+		// simulation parameters
+		if (!strncmp("pre_onset_aggr", name, 63)) 
+			sim_params->pre_onset_aggr = val;
+		if (!strncmp("post_onset_aggr", name, 63)) 
+			sim_params->post_onset_aggr = val;
+		if (!strncmp("onset_prob", name, 63)) 
+			sim_params->onset_prob = val;
+
+		if (!strncmp("particle_roughness", name, 63)) 
+			sim_params->particle_roughness = val;
+		if (!strncmp("particle_min_len", name, 63)) 
+			sim_params->particle_min_len = val;
+		if (!strncmp("particle_max_len", name, 63)) 
+			sim_params->particle_max_len = val;
+		if (!strncmp("particle_min_intensity", name, 63)) 
+			sim_params->particle_min_intensity = val;
+		if (!strncmp("particle_max_intensity", name, 63)) 
+			sim_params->particle_max_intensity = val;
+	
+		if (!strncmp("accel_distr_mu", name, 63)) 
+			sim_params->accel_distr_mu = val;
+		if (!strncmp("accel_distr_sig", name, 63)) 
+			sim_params->accel_distr_sig = val;
+		if (!strncmp("raccel_distr_mu", name, 63)) 
+			sim_params->raccel_distr_mu = val;
+		if (!strncmp("raccel_distr_sig", name, 63)) 
+			sim_params->raccel_distr_sig = val;
+
+		if (!strncmp("drag_coeff", name, 63)) 
+			sim_params->drag_coeff = val;
+		if (!strncmp("bounce_strength", name, 63)) 
+			sim_params->bounce_strength = val;
+		if (!strncmp("particle_cnt", name, 63)) 
+			sim_params->particle_cnt = (int) val;
+		if (!strncmp("num_ptypes", name, 63)) 
+			sim_params->num_ptypes = (int) val;
+
+		// video parameters
+		if (!strncmp("frame_cnt", name, 63)) 
+			sim_params->frame_cnt = (int) val;
+		if (!strncmp("fps", name, 63)) 
+			sim_params->fps = (int) val;
+		if (!strncmp("video_cnt", name, 63)) 
+			sim_params->video_cnt = (int) val;
+
+	}
+	return 0;
+}
+
+int handle_args(int argc, char **argv, char *out_dir, params_t *sim_params)
+{
+	--argc, ++argv; //discard self-ref arg
+	
+	params_t my_params =  {
+		.scale = 0.15,
+		.res = 1200,
+
+		.pre_onset_aggr = 0.0,
+		.post_onset_aggr = 0.3,
+		.onset_prob = 0.005,
+
+		.particle_roughness = 0.05,
+		.particle_min_len = 0.01,
+		.particle_max_len = 0.8,
+		.particle_min_intensity = 0.5,
+		.particle_max_intensity = 1.5,
+		
+		.accel_distr_mu = 0.0,
+		.accel_distr_sig = 0.1,
+		.raccel_distr_mu = 0.0,
+		.raccel_distr_sig = 0.3,
+		.drag_coeff = 0.1,
+		.bounce_strength = 0.001,
+		.particle_cnt = 200,
+		.num_ptypes = 100,
+
+		.frame_cnt = 1500,
+		.fps = 60,
+		.video_cnt = 300,
+	};
+
+	strncpy(out_dir, "./out/ds", 256);
+	
+	while(argc) {
+		if (!strncmp(*argv, "-o", 3)) {
+			if (!(--argc)) {
+				fprintf(stderr, "incorrect usage\n");
+				return -1;
+			}
+			strncpy(out_dir, *(++argv), 256);
+			fprintf(stderr, "changed outdir, its now %s\n", out_dir);
+		} else if (!strncmp(*argv, "-p", 3)) {
+			if (!(--argc)) {
+				fprintf(stderr, "incorrect usage\n");
+				return -1;
+			}
+
+			read_sim_params(*(++argv), &my_params);			
+		} else if (!strncmp(*argv, "-h", 3)) {
+			fprintf(stderr, "usage: dtwin [options]\n"
+					"-o <directory> 	write videos and metadata to specified directory (default ./out/ds)\n"
+					"-p <filename>		use simulation parameters from the specified file\n"
+					"-h			print this dialog\n");
+			return -2;
+		} else {
+			fprintf(stderr, "unknown argument\n");
+			return -1;
+		}
+
+		--argc, ++argv;
+	}
+
+	*sim_params = my_params;
+	return 0;
+}
+
+	
