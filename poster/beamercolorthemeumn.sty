@@ -5,14 +5,10 @@
 % Definitions
 % ====================
 
-% Colors from http://web.mit.edu/graphicidentity/colors.html
-\definecolor{mitred}{cmyk}{0.24, 1.0, 0.78, 0.17}
-\definecolor{mitdarkgray}{cmyk}{0.48, 0.39, 0.39, 0.04}
-\definecolor{mitlightgray}{cmyk}{0.24, 0.20, 0.20, 0.0}
-
-% Extra colors
-\definecolor{lightgray}{RGB}{240, 240, 240}
-\definecolor{lightorange}{RGB}{255, 245, 242}
+\definecolor{lightgray}{RGB}{245, 246, 250}
+\definecolor{blue}{RGB}{122, 0, 25}
+\definecolor{darkblue}{RGB}{91, 0, 19}
+\definecolor{lightblue}{RGB}{232, 244, 255}
 
 % ====================
 % Theme
@@ -23,23 +19,24 @@
 \setbeamercolor{palette secondary}{fg=black,bg=white}
 \setbeamercolor{palette tertiary}{bg=black,fg=white}
 \setbeamercolor{palette quaternary}{fg=black,bg=white}
-\setbeamercolor{structure}{fg=mitred}
+\setbeamercolor{structure}{fg=darkblue}
 
 % Headline
-\setbeamercolor{headline}{fg=black,bg=lightgray}
+\setbeamercolor{headline}{fg=lightgray,bg=blue}
+\setbeamercolor{headline rule}{bg=darkblue}
 
 % Block
-\setbeamercolor{block title}{fg=mitred,bg=white}
+\setbeamercolor{block title}{fg=blue,bg=white}
 \setbeamercolor{block separator}{bg=black}
 \setbeamercolor{block body}{fg=black,bg=white}
 
 % Alert Block
-\setbeamercolor{block title alerted}{fg=mitred,bg=lightorange}
+\setbeamercolor{block title alerted}{fg=blue,bg=lightgray}
 \setbeamercolor{block separator alerted}{bg=black}
-\setbeamercolor{block body alerted}{fg=black,bg=lightorange}
+\setbeamercolor{block body alerted}{fg=black,bg=lightgray}
 
 % Example Block
-\setbeamercolor{block title example}{fg=mitred,bg=lightgray}
+\setbeamercolor{block title example}{fg=blue,bg=lightgray}
 \setbeamercolor{block separator example}{bg=black}
 \setbeamercolor{block body example}{fg=black,bg=lightgray}
 
@@ -47,7 +44,7 @@
 \setbeamercolor{heading}{fg=black}
 
 % Itemize
-\setbeamercolor{item}{fg=mitred}
+\setbeamercolor{item}{fg=darkblue}
 
 % Bibliography
 \setbeamercolor{bibliography item}{fg=black}

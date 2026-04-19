@@ -9,9 +9,9 @@
 
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage[size=custom,width=118.9,height=84.1,scale=1.0]{beamerposter}
+\usepackage[size=custom,width=101.6,height=76.2,scale=1.0]{beamerposter}
 \usetheme{gemini}
-\usecolortheme{gemini}
+\usecolortheme{umn}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{tikz}
@@ -38,9 +38,9 @@
 
 \title{Phase-Sense: Physics Guided AI}
 
-\author{Alyssa P. Hacker \inst{1} \and Ben Bitdiddle \inst{2} \and Lem E. Tweakit \inst{2}}
+\author{Joel Kuehne \and Alexis MacLean \and Hamza Rahmoune \and Cole Jaeger}
 
-\institute[shortinst]{\inst{1} Some Institute \samelineand \inst{2} Another Institute}
+\institute[shortinst]{Department of Electrical and Computer Engineering, University of Minnesota Twin Cities}
 
 % ====================
 % Footer (optional)
@@ -57,7 +57,7 @@
 % ====================
 
 % use this to include logos on the left and/or right side of the header:
-% \logoright{\includegraphics[height=7cm]{logo1.pdf}}
+\logoleft{\includegraphics[height=7cm]{M_gold.png}}
 % \logoleft{\includegraphics[height=7cm]{logo2.pdf}}
 
 % ====================
@@ -72,86 +72,32 @@
 
 \begin{column}{\colwidth}
 
-  \begin{block}{A block title}
+  \begin{block}{Emergent Phenomena and Colloidal Aggregation}
+    To cite Cambridge Dictionary, ``An emergent property of a complex system is one that does not belong to any part of that system on its own, but that happens as a result of parts of the system interacting''. This could be particles colliding in a fluid and sticking together forming clusters or it could be individual atoms joining together during crystal growth.
 
-    Some block contents, followed by a diagram, followed by a dummy paragraph.
+    Emergent phenomena are everywhere, and the analysis of emergent phenomena is useful in many fields. When trying to understand or analyze emergent phenomena, it is useful to have some measure of the relative progress of the phenomenon. In general, we call this measure of the relative progress of the event over time the ``emergence index''. A plot of the emergence index over time is therefore an ``emergence curve''.
 
-    \begin{figure}
+    Researchers at the University of Pennsylvania use this framework in their analysis of the aggregation of asbestos particles in the paper ``Aggregation of Elongated Colloids in Water''~\cite{aggr}. Figure~\ref{fig:emergence} below shows some of the emergence curves that they gathered from timelapse microscope video. Note the three distinct phases of aggregation. In Phase I, aggregation has not yet started. There is a distinct onset time between Phase I and Phase II, where aggregation takes off. By Phase III, the aggregation has completed and the emergence curve levels off.
+
+    \begin{figure}[h]
       \centering
-      \begin{tikzpicture}[scale=6]
-        \draw[step=0.25cm,color=gray] (-1,-1) grid (1,1);
-        \draw (1,0) -- (0.2,0.2) -- (0,1) -- (-0.2,0.2) -- (-1,0)
-          -- (-0.2,-0.2) -- (0,-1) -- (0.2,-0.2) -- cycle;
-      \end{tikzpicture}
-      \caption{A figure caption.}
+      \includegraphics[width=0.7\textwidth]{emergence.jpg}
+      \caption{Emergence curves for the aggregation of asbestos particles~\cite{aggr}.}
+      \label{fig:emergence}
     \end{figure}
-
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi ultricies
-    eget libero ac ullamcorper. Integer et euismod ante. Aenean vestibulum
-    lobortis augue, ut lobortis turpis rhoncus sed. Proin feugiat nibh a
-    lacinia dignissim. Proin scelerisque, risus eget tempor fermentum, ex
-    turpis condimentum urna, quis malesuada sapien arcu eu purus.
-
   \end{block}
 
-  \begin{block}{A block containing a list}
+  \begin{block}{Nerual Networks for Emergence Analysis}
+    Analysis of emergent phenomena can be difficult. Classical computer vision techniques work well when particles can be easily distinguished and the emergence index can be calculated directly. This is not always the case. Low resolutions, small particle sizes, and lens abberations can all complicate conventional analysis. Neural networks have proved to be quite effective in this regard~\cite{htt}, but require large, annotated datasets of microscope footage as training data.
 
-    Curabitur condimentum sem id semper vulputate. Nam lobortis ultrices
-    iaculis. Maecenas bibendum, sem vel vehicula tempus, nisi tortor eleifend
-    tellus, at molestie mi libero ut turpis. Duis finibus finibus sapien, ut
-    mollis odio malesuada a. Aenean ut ex augue. Quisque vulputate scelerisque
-    eros quis bibendum. Nunc accumsan nisl a tincidunt dapibus. Nulla ut
-    vulputate elit, quis posuere tellus. Aliquam euismod nulla ipsum, eu
-    blandit metus fermentum sed. Proin ultrices sodales nulla eu molestie.
-    Nullam mi odio, blandit nec dui lacinia, accumsan facilisis nunc. Maecenas
-    vel est et magna dapibus cursus id in ante.
+    With our project, Phase-Sense, we hope to show that neural networks trained on physically-accurate, simulated footage can provide an improvement over classical computer vision techniques in the analysis of emergent phenomena in timelapse microcopy. Our project consists of three parts:
 
-    \begin{itemize}
-      \item \textbf{Mauris tempor} risus nulla, sed ornare
-      \item \textbf{Libero tincidunt} a duis congue vitae
-      \item \textbf{Dui ac pretium} morbi justo neque, ullamcorper
-    \end{itemize}
-
-    Cras imperdiet vel elit dignissim cursus. Nulla vehicula, lacus sed lacinia
-    hendrerit, tortor libero euismod orci, sodales cursus felis arcu sit amet
-    metus. Suspendisse sit amet tincidunt nisi. Maecenas id libero rutrum,
-    sodales enim id, varius sem. Maecenas ac felis vel dolor feugiat pharetra.
-    Nullam suscipit libero efficitur, commodo lacus in, blandit mi. Nam at
-    sagittis nisl. Mauris eu enim nibh. In sollicitudin sit amet tortor
-    imperdiet convallis.
-
-    Mauris eget risus a purus feugiat consectetur. Aliquam suscipit nunc
-    nulla, sed feugiat massa volutpat ac. Nullam quis bibendum orci. Cras
-    blandit odio velit, et tempus neque malesuada ut. Fusce pharetra mauris
-    sed magna ultrices, eget aliquet dui pellentesque. Nullam porta eleifend
-    leo eu feugiat. Sed quis libero in magna interdum sagittis ut sed mi.
-
+    \begin{enumerate}
+      \item \textbf{PyTorch Neural Network} --- Analyzes timelapse microcope video of emergent phenomena. Produces an emergence curve for each video.
+      \item \textbf{Digital Twin Simulator} --- Creates annotated microscope footage that serves as an unlimited annotated training and testing for the neural network.
+      \item \textbf{Computer Vision Pipeline} --- Analyzes simulated video useing classical computer vision techniques. Serves as a baseline for our neural network.
+    \end{enumerate}
   \end{block}
-
-  \begin{alertblock}{A highlighted block}
-
-    This block catches your eye, so \textbf{important stuff} should probably go
-    here.
-
-    Curabitur eu libero vehicula, cursus est fringilla, luctus est. Morbi
-    consectetur mauris quam, at finibus elit auctor ac. Aliquam erat volutpat.
-    Aenean at nisl ut ex ullamcorper eleifend et eu augue. Aenean quis velit
-    tristique odio convallis ultrices a ac odio.
-
-    \begin{itemize}
-      \item \textbf{Fusce dapibus tellus} vel tellus semper finibus. In
-        consequat, nibh sed mattis luctus, augue diam fermentum lectus.
-      \item \textbf{In euismod erat metus} non ex. Vestibulum luctus augue in
-        mi condimentum, at sollicitudin lorem viverra.
-      \item \textbf{Suspendisse vulputate} mauris vel placerat consectetur.
-        Mauris semper, purus ac hendrerit molestie, elit mi dignissim odio, in
-        suscipit felis sapien vel ex.
-    \end{itemize}
-
-    Aenean tincidunt risus eros, at gravida lorem sagittis vel. Vestibulum ante
-    ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae.
-
-  \end{alertblock}
 
 \end{column}
 
@@ -159,104 +105,20 @@
 
 \begin{column}{\colwidth}
 
-  \begin{block}{A block containing an enumerated list}
+  \begin{block}{Methodology}
+    To test the effectiveness of our approach, we chose to model and analyze a similar physical phenomenon to that investigated in the paper ``Aggregation of Elongated Colloids in Water''~\cite{aggr}. We implemented this as a Brownian motion simulation. Particles are modeled as long ``spines'' of points. Random accelerations are applied to each of the particles, and occasional collisions between particles cause particles to stick together with some particular aggregation probability.
 
-    Vivamus congue volutpat elit non semper. Praesent molestie nec erat ac
-    interdum. In quis suscipit erat. \textbf{Phasellus mauris felis, molestie
-    ac pharetra quis}, tempus nec ante. Donec finibus ante vel purus mollis
-    fermentum. Sed felis mi, pharetra eget nibh a, feugiat eleifend dolor. Nam
-    mollis condimentum purus quis sodales. Nullam eu felis eu nulla eleifend
-    bibendum nec eu lorem. Vivamus felis velit, volutpat ut facilisis ac,
-    commodo in metus.
+    At the start of each simulation, the aggregation probability starts out at 0 (meaning aggregation is impossible). At some point in each simulation, the aggregation probability is suddenly increasedl. This is the onset time of our aggregation. Physically, this might correspond to some change in the solution that causes particles to stick together more.
 
-    \begin{enumerate}
-      \item \textbf{Morbi mauris purus}, egestas at vehicula et, convallis
-        accumsan orci. Orci varius natoque penatibus et magnis dis parturient
-        montes, nascetur ridiculus mus.
-      \item \textbf{Cras vehicula blandit urna ut maximus}. Aliquam blandit nec
-        massa ac sollicitudin. Curabitur cursus, metus nec imperdiet bibendum,
-        velit lectus faucibus dolor, quis gravida metus mauris gravida turpis.
-      \item \textbf{Vestibulum et massa diam}. Phasellus fermentum augue non
-        nulla accumsan, non rhoncus lectus condimentum.
-    \end{enumerate}
+    The digital twin simulator generates hundreds of microscopy videos, with randomized parameters including particle size acceleration, particle size, onset time, and aggregation probability. Each video is acompanied by a metadata file that includes the simulation parameters and the emergence curve calculated as the average number of particles in a cluster over time. An example frame from one of these videos is Figure~\ref{fig:frame} below.
 
-  \end{block}
-
-  \begin{block}{Fusce aliquam magna velit}
-
-    Et rutrum ex euismod vel. Pellentesque ultricies, velit in fermentum
-    vestibulum, lectus nisi pretium nibh, sit amet aliquam lectus augue vel
-    velit. Suspendisse rhoncus massa porttitor augue feugiat molestie. Sed
-    molestie ut orci nec malesuada. Sed ultricies feugiat est fringilla
-    posuere.
-
-    \begin{figure}
+    \begin{figure}[h]
       \centering
-      \begin{tikzpicture}
-        \begin{axis}[
-            scale only axis,
-            no markers,
-            domain=0:2*pi,
-            samples=100,
-            axis lines=center,
-            axis line style={-},
-            ticks=none]
-          \addplot[red] {sin(deg(x))};
-          \addplot[blue] {cos(deg(x))};
-        \end{axis}
-      \end{tikzpicture}
-      \caption{Another figure caption.}
+      \includegraphics[width=0.6\textwidth]{frame.png}
+      \caption{Sample image from simulated microscope footage.}
+      \label{fig:frame}
     \end{figure}
-
-    In in mi consequat, tristique felis at, dapibus lacus. Fusce sed eleifend
-    sem. Phasellus viverra eros enim. Ut quis pulvinar turpis. In eu faucibus
-    risus. Morbi convallis elit metus, nec vestibulum justo sollicitudin sit
-    amet. Duis et magna accumsan, rutrum erat ut, pulvinar eros. Nunc ac tellus
-    suscipit, sagittis massa nec, ultricies mi. Praesent eget placerat sem. Sed
-    interdum, ligula ut condimentum facilisis, risus risus congue ex, at ornare
-    eros ipsum vel sapien. Suspendisse tincidunt elit ut magna consequat, at
-    dapibus est fringilla. Aliquam vitae dolor urna. Curabitur pellentesque
-    pretium convallis. Sed et ex vel nisi condimentum finibus. Cras blandit
-    nibh molestie venenatis feugiat. Proin nec justo pulvinar, euismod elit
-    viverra, condimentum sem.
-
   \end{block}
-
-  \begin{block}{Nam cursus consequat egestas}
-
-    Nulla eget sem quam. Ut aliquam volutpat nisi vestibulum convallis. Nunc a
-    lectus et eros facilisis hendrerit eu non urna. Interdum et malesuada fames
-    ac ante \textit{ipsum primis} in faucibus. Etiam sit amet velit eget sem
-    euismod tristique. Praesent enim erat, porta vel mattis sed, pharetra sed
-    ipsum. Morbi commodo condimentum massa, \textit{tempus venenatis} massa
-    hendrerit quis. Maecenas sed porta est. Praesent mollis interdum lectus,
-    sit amet sollicitudin risus tincidunt non.
-
-    Etiam sit amet tempus lorem, aliquet condimentum velit. Donec et nibh
-    consequat, sagittis ex eget, dictum orci. Etiam quis semper ante. Ut eu
-    mauris purus. Proin nec consectetur ligula. Mauris pretium molestie
-    ullamcorper. Integer nisi neque, aliquet et odio non, sagittis porta justo.
-
-    \begin{itemize}
-      \item \textbf{Sed consequat} id ante vel efficitur. Praesent congue massa
-        sed est scelerisque, elementum mollis augue iaculis.
-        \begin{itemize}
-          \item In sed est finibus, vulputate
-            nunc gravida, pulvinar lorem. In maximus nunc dolor, sed auctor eros
-            porttitor quis.
-          \item Fusce ornare dignissim nisi. Nam sit amet risus vel lacus
-            tempor tincidunt eu a arcu.
-          \item Donec rhoncus vestibulum erat, quis aliquam leo
-            gravida egestas.
-        \end{itemize}
-      \item \textbf{Sed luctus, elit sit amet} dictum maximus, diam dolor
-        faucibus purus, sed lobortis justo erat id turpis.
-      \item \textbf{Pellentesque facilisis dolor in leo} bibendum congue.
-        Maecenas congue finibus justo, vitae eleifend urna facilisis at.
-    \end{itemize}
-
-  \end{block}
-
 \end{column}
 
 \separatorcolumn
