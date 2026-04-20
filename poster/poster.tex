@@ -46,10 +46,10 @@
 % Footer (optional)
 % ====================
 
-\footercontent{
-  \href{https://www.example.com}{https://www.example.com} \hfill
-  ABC Conference 2025, New York --- XYZ-1234 \hfill
-  \href{mailto:alyssa.p.hacker@example.com}{alyssa.p.hacker@example.com}}
+% \footercontent{
+%   \href{https://www.example.com}{https://www.example.com} \hfill
+%   ABC Conference 2025, New York --- XYZ-1234 \hfill
+%   \href{mailto:alyssa.p.hacker@example.com}{alyssa.p.hacker@example.com}}
 % (can be left out to remove footer)
 
 % ====================
@@ -87,15 +87,15 @@
     \end{figure}
   \end{block}
 
-  \begin{block}{Nerual Networks for Emergence Analysis}
-    Analysis of emergent phenomena can be difficult. Classical computer vision techniques work well when particles can be easily distinguished and the emergence index can be calculated directly. This is not always the case. Low resolutions, small particle sizes, and lens abberations can all complicate conventional analysis. Neural networks have proved to be quite effective in this regard~\cite{htt}, but require large, annotated datasets of microscope footage as training data.
+  \begin{block}{Neural Networks for Emergence Analysis}
+    Analysis of emergent phenomena can be difficult. Classical computer vision techniques work well when particles can be easily distinguished and the emergence index can be calculated directly. This is not always the case. Low resolutions, small particle sizes, and lens aberrations can all complicate conventional analysis. Neural networks have proved to be quite effective in this regard~\cite{htt}, but require large, annotated datasets of microscope footage as training data.
 
     With our project, Phase-Sense, we hope to show that neural networks trained on physically-accurate, simulated footage can provide an improvement over classical computer vision techniques in the analysis of emergent phenomena in timelapse microcopy. Our project consists of three parts:
 
     \begin{enumerate}
       \item \textbf{PyTorch Neural Network} --- Analyzes timelapse microcope video of emergent phenomena. Produces an emergence curve for each video.
       \item \textbf{Digital Twin Simulator} --- Creates annotated microscope footage that serves as an unlimited annotated training and testing for the neural network.
-      \item \textbf{Computer Vision Pipeline} --- Analyzes simulated video useing classical computer vision techniques. Serves as a baseline for our neural network.
+      \item \textbf{Computer Vision Pipeline} --- Analyzes simulated video using classical computer vision techniques. Serves as a baseline for our neural network.
     \end{enumerate}
   \end{block}
 
@@ -108,14 +108,14 @@
   \begin{block}{Methodology}
     To test the effectiveness of our approach, we chose to model and analyze a similar physical phenomenon to that investigated in the paper ``Aggregation of Elongated Colloids in Water''~\cite{aggr}. We implemented this as a Brownian motion simulation. Particles are modeled as long ``spines'' of points. Random accelerations are applied to each of the particles, and occasional collisions between particles cause particles to stick together with some particular aggregation probability.
 
-    At the start of each simulation, the aggregation probability starts out at 0 (meaning aggregation is impossible). At some point in each simulation, the aggregation probability is suddenly increasedl. This is the onset time of our aggregation. Physically, this might correspond to some change in the solution that causes particles to stick together more.
+    At the start of each simulation, the aggregation probability starts out at 0 (meaning aggregation is impossible). At some point in each simulation, the aggregation probability is suddenly increased. This is the onset time of our aggregation. Physically, this might correspond to some change in the solution that causes particles to stick together more.
 
-    The digital twin simulator generates hundreds of microscopy videos, with randomized parameters including particle size acceleration, particle size, onset time, and aggregation probability. Each video is acompanied by a metadata file that includes the simulation parameters and the emergence curve calculated as the average number of particles in a cluster over time. An example frame from one of these videos is Figure~\ref{fig:frame} below.
+    The digital twin simulator generates hundreds of microscopy videos, with randomized parameters including particle size acceleration, particle size, onset time, and aggregation probability. Each video is accompanied by a metadata file that includes the simulation parameters and the emergence curve calculated as the average number of particles in a cluster over time. An example frame from one of these videos is Figure~\ref{fig:frame} below.
 
     \begin{figure}[h]
       \centering
       \includegraphics[width=0.6\textwidth]{frame.png}
-      \caption{Sample image from simulated microscope footage.}
+      \caption{Sample image from our simulated microscope footage.}
       \label{fig:frame}
     \end{figure}
   \end{block}
@@ -125,77 +125,16 @@
 
 \begin{column}{\colwidth}
 
-  \begin{exampleblock}{A highlighted block containing some math}
+  \begin{block}{Results}
+    
+  \end{block}
 
-    A different kind of highlighted block.
+  \begin{block}{Conclusions}
 
-    $$
-    \int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
-    $$
+  \end{block}
 
-    Interdum et malesuada fames $\{1, 4, 9, \ldots\}$ ac ante ipsum primis in
-    faucibus. Cras eleifend dolor eu nulla suscipit suscipit. Sed lobortis non
-    felis id vulputate.
-
-    \heading{A heading inside a block}
-
-    Praesent consectetur mi $x^2 + y^2$ metus, nec vestibulum justo viverra
-    nec. Proin eget nulla pretium, egestas magna aliquam, mollis neque. Vivamus
-    dictum $\mathbf{u}^\intercal\mathbf{v}$ sagittis odio, vel porta erat
-    congue sed. Maecenas ut dolor quis arcu auctor porttitor.
-
-    \heading{Another heading inside a block}
-
-    Sed augue erat, scelerisque a purus ultricies, placerat porttitor neque.
-    Donec $P(y \mid x)$ fermentum consectetur $\nabla_x P(y \mid x)$ sapien
-    sagittis egestas. Duis eget leo euismod nunc viverra imperdiet nec id
-    justo.
-
-  \end{exampleblock}
-
-  \begin{block}{Nullam vel erat at velit convallis laoreet}
-
-    Class aptent taciti sociosqu ad litora torquent per conubia nostra, per
-    inceptos himenaeos. Phasellus libero enim, gravida sed erat sit amet,
-    scelerisque congue diam. Fusce dapibus dui ut augue pulvinar iaculis.
-
-    \begin{table}
-      \centering
-      \begin{tabular}{l r r c}
-        \toprule
-        \textbf{First column} & \textbf{Second column} & \textbf{Third column} & \textbf{Fourth} \\
-        \midrule
-        Foo & 13.37 & 384,394 & $\alpha$ \\
-        Bar & 2.17 & 1,392 & $\beta$ \\
-        Baz & 3.14 & 83,742 & $\delta$ \\
-        Qux & 7.59 & 974 & $\gamma$ \\
-        \bottomrule
-      \end{tabular}
-      \caption{A table caption.}
-    \end{table}
-
-    Donec quis posuere ligula. Nunc feugiat elit a mi malesuada consequat. Sed
-    imperdiet augue ac nibh aliquet tristique. Aenean eu tortor vulputate,
-    eleifend lorem in, dictum urna. Proin auctor ante in augue tincidunt
-    tempor. Proin pellentesque vulputate odio, ac gravida nulla posuere
-    efficitur. Aenean at velit vel dolor blandit molestie. Mauris laoreet
-    commodo quam, non luctus nibh ullamcorper in. Class aptent taciti sociosqu
-    ad litora torquent per conubia nostra, per inceptos himenaeos.
-
-    \begin{enumerate}
-      \item \textbf{Praesent vel enim} eget urna auctor accumsan. Ut volutpat, erat sed vulputate porta, metus dolor consectetur eros, eget vestibulum purus nulla hendrerit ex.
-      \item \textbf{Lorem ipsum dolor sit amet}, consectetur adipiscing elit. Proin lobortis euismod eros at rhoncus.
-      \item \textbf{Sed eget odio varius}, posuere tellus malesuada, commodo tellus. Sed sollicitudin mauris nibh, quis mattis magna fermentum et.
-      \item \textbf{Suspendisse ut tellus} ullamcorper, faucibus mauris vitae, blandit est. Aenean gravida sodales pretium. Nullam sed dolor in arcu maximus blandit vel non eros.
-      \item \textbf{Fusce quis elit} vel lectus porta tempus.
-    \end{enumerate}
-
-    Nulla varius finibus volutpat. Mauris molestie lorem tincidunt, iaculis
-    libero at, gravida ante. Phasellus at felis eu neque suscipit suscipit.
-    Integer ullamcorper, dui nec pretium ornare, urna dolor consequat libero,
-    in feugiat elit lorem euismod lacus. Pellentesque sit amet dolor mollis,
-    auctor urna non, tempus sem.
-
+  \begin{block}{Acknowledgements}
+    Special thanks to Professor Sang-Hyun Oh <sang@umn.edu> and to his graduate student <howey024@umn.edu> for their guidance throughout the semester.
   \end{block}
 
   \begin{block}{References}
