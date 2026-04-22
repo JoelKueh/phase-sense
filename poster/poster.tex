@@ -38,7 +38,7 @@
 
 \title{Phase-Sense: Physics Guided AI}
 
-\author{Joel Kuehne \and Alexis MacLean \and Hamza Rahmoune \and Cole Jaeger}
+\author{Joel Kuehne \and Alexis MacLean \and Cole Jaeger \and Hamza Rahmoune }
 
 \institute[shortinst]{Department of Electrical and Computer Engineering, University of Minnesota Twin Cities}
 
@@ -81,7 +81,7 @@
 
     \begin{figure}[h]
       \centering
-      \includegraphics[width=0.7\textwidth]{emergence.jpg}
+      \includegraphics[width=0.9\textwidth]{emergence.jpg}
       \caption{Emergence curves for the aggregation of asbestos particles~\cite{aggr}.}
       \label{fig:emergence}
     \end{figure}
@@ -110,14 +110,18 @@
 
     At the start of each simulation, the aggregation probability starts out at 0 (meaning aggregation is impossible). At some point in each simulation, the aggregation probability is suddenly increased. This is the onset time of our aggregation. Physically, this might correspond to some change in the solution that causes particles to stick together more.
 
-    The digital twin simulator generates hundreds of microscopy videos, with randomized parameters including particle size acceleration, particle size, onset time, and aggregation probability. Each video is accompanied by a metadata file that includes the simulation parameters and the emergence curve calculated as the average number of particles in a cluster over time. An example frame from one of these videos is Figure~\ref{fig:frame} below.
+    The digital twin simulator generates hundreds of microscopy videos, with randomized parameters including particle size, acceleration, onset time, and aggregation probability. Each video is accompanied by a metadata file that includes the simulation parameters and the emergence curve calculated as the average number of particles in a cluster over time. An example frame from one of these videos is Figure~\ref{fig:frame} below.
 
     \begin{figure}[h]
       \centering
-      \includegraphics[width=0.6\textwidth]{frame.png}
+      \includegraphics[width=0.65\textwidth]{frame.png}
       \caption{Sample image from our simulated microscope footage.}
       \label{fig:frame}
     \end{figure}
+
+    The simulated videos and their associated metadata are passed into our neural network written in PyTorch. We used a CNN-TCN (Convolutional Neural Network, Temporal Convolutional Network) hybrid model. The CNN performs feature extraction on the each individual frame. It is implemented using the pretrained model ResNet50 which outputs 2048 spatial features for every input video. The TCN performs a temporal convolution on the input data and converts that to 64 temporal features. Finally, a fully connected layer takes the 64 temporal features and converts them to a single number. For every set of 5 frames window fed into the CNN-TCN, the model outputs one emergence index. By passing all possible 5 frame windows into the model in series, we can generate an emergence curve for every input video. Similarly, we can use thresholding to determine the onset time of the aggregation. A threshold of 1.5 appeared to produce the best results.
+
+    To test the performance of our PyTorch model, we compared our results against a classical computer vision baseline. The classical computer vision pipeline first uses edge detection to identify individual particles. Next, it applies a closing operation to fill in each of the indicidual particles. It then identifies individual clusters as connected groups of white pixels. The computer vision model can then estimate the average size of the clusters by counting the number of white pixels in each connected group. This emergence index metric is not the same as that used in the digital twin simulator, where cluster size is computed in number of particles. In particular, it is vulnerable to differences in the size of particles. For this reason, we map all produced emergence curves onto the range $[0,1]$ before doing any performance comparisons.
   \end{block}
 \end{column}
 
@@ -126,18 +130,33 @@
 \begin{column}{\colwidth}
 
   \begin{block}{Results}
-    
-  \end{block}
+    First and foremost, the machine learning model and computer vision models both produce reasonable emergence curves and onset estimates. In figure~\ref{fig:curve} below is a normalized comparison of curves produced by the digital twin and the two pipelines for a single simulated video.
+
+    \begin{figure}[h]
+      \centering
+      \includegraphics[width=0.75\textwidth]{result_norm.png}
+      \caption{Normalized comparison of emergence curves from the digital twin and the two pipelines.}
+      \label{fig:curve}
+    \end{figure}
+
+    The onset estimates produced by both pipelines were also quite accurate to that provided by the digital twin simulator. In figure~\ref{fig:onset} below is a comparison of onset estimate errors for the two pipelines.
+
+    \begin{figure}[h]
+      \centering
+      \includegraphics[width=0.75\textwidth]{result_onset_error.png}
+      \caption{Onset estimate error distributions for the two pipelines.}
+      \label{fig:onset}
+    \end{figure}
+   \end{block}
 
   \begin{block}{Conclusions}
+    Both pipelines produced sensible emergence curves and reasonably accurate onset estimates. The machine learning model did not provide much improvement over the classical computer vision baseline in this particular test. This is not a failure of the machine learning model but rather a testament to the success of the computer vision baseline.
 
+    This project did not make full use of the unique capabilities of machine learning models. Future work should make use of the generality of machine learning models. Testing the ability of machine learning models to infer physical parameters (e.g., determining particle aggregation probability directly from video) or to analyze more complicated physical phenomena could further emphasize the benefits that machine learning models can have.
   \end{block}
 
-  \begin{block}{Acknowledgements}
+  \begin{block}{Acknowledgements and References}
     Special thanks to Professor Sang-Hyun Oh <sang@umn.edu> and to his graduate student <howey024@umn.edu> for their guidance throughout the semester.
-  \end{block}
-
-  \begin{block}{References}
 
     \nocite{*}
     \footnotesize{\bibliographystyle{plain}\bibliography{poster}}
