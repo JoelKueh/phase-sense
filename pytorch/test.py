@@ -77,55 +77,6 @@ def resize_curve(curve, target_len=SEQ_LEN):
     return curve.squeeze()
 
 
-class VideoDataset(Dataset):
-    def __init__(self, indices, window_size=5, transform=None):
-        self.transform = transform
-        self.window_size = window_size
-        self.len = len(indices)
-        self.data = []
-
-        for i in tqdm(range(len(indices))):
-            idx = indices[i]
-            video_path = os.path.join(DATA_DIR, f"{idx}.avi")
-            meta_path = os.path.join(DATA_DIR, f"{idx}.meta")
-
-            frames = frames_extraction(video_path)
-            curve = load_meta(meta_path)
-            curve = resize_curve(curve)
-            self.data.append((frames, curve))
-
-    def __len__(self):
-        return self.len * (SEQ_LEN - self.window_size + 1)
-
-    def __getitem__(self, idx):
-        video_idx = idx // (SEQ_LEN - self.window_size + 1)
-        frame_idx = idx % (SEQ_LEN - self.window_size + 1)
-        frames, curve = self.data[video_idx]
-        frames = frames[frame_idx:frame_idx+self.window_size]
-        target = curve[frame_idx+4]
-        if self.transform:
-            frames = self.transform(frames)
-        return frames, target
-
-# Automatically determine the number of videos
-num_videos = len([f for f in os.listdir(DATA_DIR) if f.endswith('.avi')])
-indices = list(range(num_videos))
-
-# Define transformations for data augmentation
-train_transforms = v2.Compose([
-    v2.RandomHorizontalFlip(p=0.5),
-    v2.ColorJitter(brightness=0.1, contrast=0.1),
-    v2.ToDtype(torch.float32, scale=True),
-])
-
-train_idx, test_idx = train_test_split(indices, test_size=0.2, random_state=42)
-train_dataset = VideoDataset(train_idx, window_size=5)
-test_dataset  = VideoDataset(test_idx, window_size=5)
-
-train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=4, pin_memory=True)
-test_loader  = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=4, pin_memory=True)
-
-
 class CNN_TCN(nn.Module):
     def __init__(self, window_size=5):
         super().__init__()
@@ -191,45 +142,99 @@ class CNN_LSTM(nn.Module):
 
         return out
 
-
-print(f"Training on device: {device}")
 model = CNN_TCN().to(device)
-criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-
-EPOCHS = 10
-
-for epoch in range(EPOCHS):
-    print(f"Beginning Epoch {epoch}")
-    model.train()
-    train_loss = 0
-
-    for xb, yb in train_loader:
-        xb, yb = xb.to(device, non_blocking=True), yb.to(device, non_blocking=True)
-
-        optimizer.zero_grad()
-
-        preds = model(xb)
-        loss = criterion(preds, yb)
-
-        loss.backward()
-        optimizer.step()
-
-        train_loss += loss.item()
-
-    print(f"Epoch {epoch}: Train Loss = {train_loss:.4f}")
-
-torch.save(model.state_dict(), "./model_weights.pth")
+model.load_state_dict(torch.load("./model_weights.pth", weights_only=True))
 model.eval()
-test_loss = 0
 
-with torch.no_grad():
-    for xb, yb in test_loader:
-        xb, yb = xb.to(device), yb.to(device)
 
-        preds = model(xb)
-        loss = criterion(preds, yb)
+window_size = 5
+def predict_video_curve(video_path):
+    model.eval()
+    frames = frames_extraction(video_path)
+    if frames is None:
+        return None
 
-        test_loss += loss.item()
+    predictions = []
+    with torch.no_grad():
+        for i in range(len(frames) - window_size + 1):
+            window = frames[i : i + window_size]
+            input_tensor = window.unsqueeze(0).to(device)
+            pred = model(input_tensor)
+            predictions.append(pred.item())
+    return np.array(predictions)
 
-print("Test Loss:", test_loss)
+
+def cumulative_error(pred, act):
+    sum = 0
+    for i in range(len(pred)):
+        sum += pred[i] - act[i]
+    return sum
+
+
+def minmax(arr):
+    arr_min = np.min(arr)
+    arr_max = np.max(arr)
+    return (arr - arr_min) / (arr_max - arr_min)
+
+
+# Normalizes pred and act and compares them
+def two_way_minmax_curve_error(pred, act):
+    sum = 0
+    norm_pred = minmax(pred)
+    norm_act = minmax(act)
+    for i in range(len(pred)):
+        sum += norm_pred[i] - norm_act[i]
+    return sum
+
+
+# Normalizes act and maps applies same transform on pred
+def one_way_minmax_curve_error(pred, act):
+    sum = 0
+    arr_min = np.min(act)
+    arr_max = np.max(act)
+    norm_pred = (pred - arr_min) / (arr_max - arr_min)
+    norm_act = (act - arr_min) / (arr_max - arr_min)
+    for i in range(len(pred)):
+        sum += norm_pred[i] - norm_act[i]
+    return sum
+
+
+def onset_error(pred, act):
+    thresh = 1.01
+    act_onset = 0
+    for i in range(len(act)):
+        if act[i] > thresh:
+            act_onset = i
+            break
+    thresh = 1.5
+    pred_onset = 0
+    for i in range(len(pred)):
+        if pred[i] > thresh:
+            pred_onset = i+4
+            break
+    return 3 * (pred_onset - act_onset)
+
+
+f = open("results.csv", "w")
+for i in range(250):
+    file_path = f"../dtwin/out/ds/{i}"
+    print(f"Analyzing Video: {i}")
+    curve = load_meta(f"{file_path}.meta")
+    curve = resize_curve(curve)
+    curve = curve.numpy()
+    plt.plot(curve, label="True")
+    pred = predict_video_curve(f"{file_path}.avi")
+    print(f"{i},\
+          {cumulative_error(pred, curve)},\
+          {onset_error(pred, curve)},\
+          {two_way_minmax_curve_error(pred, curve)},\
+          {one_way_minmax_curve_error(pred, curve)}",\
+          file=f, flush=True)
+    plt.plot(range(4,4+len(pred)), pred, label="Pred")
+    plt.legend()
+    plt.title("Emergence Curve Prediction [0]")
+    plt.savefig(f"fig{i}.png")
+    plt.clf()
+    
+
+
