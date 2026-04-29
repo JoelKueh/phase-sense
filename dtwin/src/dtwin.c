@@ -103,7 +103,7 @@ int simulate(render_context_t *render_ctx, const char video_path[], const char m
 		// update the simulation data on the cpu
   		gettimeofday(&start, NULL);
 		emergence_idx = nbody_update(&nbody_ctx, 0.2);
-		if (fprintf(meta_output_file, "%d,%f\n", i, emergence_idx) < 0) {
+		if (i % 10 == 0 && fprintf(meta_output_file, "%d,%f\n", i/10, emergence_idx) < 0) {
 			perror("fprintf");
 			result = -1;
 			goto out_sim_deinit;
@@ -118,7 +118,7 @@ int simulate(render_context_t *render_ctx, const char video_path[], const char m
 		             nbody_ctx.pbuf, GL_DYNAMIC_DRAW);
 
 		// render the frame and pass the data to ffmpeg
-		if (render_frame(render_ctx) == -1) {
+		if (i % 10 == 0 && render_frame(render_ctx) == -1) {
 			fprintf(stderr, "render_frame: failed\n");
 			result = -1;
 			goto out_sim_deinit;
@@ -195,16 +195,16 @@ int main(int argc, char **argv)
 		dtwin_params.particle_min_len = rand_uniform_float(&s, 0.1, 0.4)
 		                                * rand_uniform_float(&s, 0.01, 0.4);
 		dtwin_params.particle_max_len = rand_uniform_float(&s, 0.4, 0.8);
-		dtwin_params.accel_distr_sig = rand_uniform_float(&s, 0.01, 0.2);
+		dtwin_params.accel_distr_sig = rand_uniform_float(&s, 0.07, 0.15);
 		dtwin_params.raccel_distr_sig = 3 * dtwin_params.accel_distr_sig;
 		dtwin_params.drag_coeff = rand_uniform_float(&s, 0.01, 0.2);
-		dtwin_params.scale = rand_uniform_float(&s, 0.1, 0.3);
+		dtwin_params.scale = 0.2;
 		dtwin_params.particle_cnt =
-			(4.0 + rand_uniform_float(&s, 0.0, 3.0)) / (dtwin_params.scale * dtwin_params.scale);
+			(4.0 + rand_uniform_float(&s, 0.0, 1.5)) / (dtwin_params.scale * dtwin_params.scale);
 		printf("%f, %d\n", dtwin_params.scale, dtwin_params.particle_cnt);
 		
 		fprintf(stderr, "Rendering Video %d/%d\n", i+1, dtwin_params.video_cnt);
-		snprintf(video_path_buf, sizeof(video_path_buf), "%s/%d.mp4",
+		snprintf(video_path_buf, sizeof(video_path_buf), "%s/%d.avi",
 		         out_dir, i);
 		snprintf(meta_path_buf, sizeof(meta_path_buf), "%s/%d.meta",
 		         out_dir, i);
@@ -301,11 +301,11 @@ int handle_args(int argc, char **argv, char *out_dir, params_t *sim_params)
 	
 	params_t my_params =  {
 		.scale = 0.15,
-		.res = 1200,
+		.res = 380,
 
 		.pre_onset_aggr = 0.0,
 		.post_onset_aggr = 0.3,
-		.onset_prob = 0.005,
+		.onset_prob = 0.0025,
 
 		.particle_roughness = 0.05,
 		.particle_min_len = 0.01,
@@ -318,13 +318,13 @@ int handle_args(int argc, char **argv, char *out_dir, params_t *sim_params)
 		.raccel_distr_mu = 0.0,
 		.raccel_distr_sig = 0.3,
 		.drag_coeff = 0.1,
-		.bounce_strength = 0.001,
+		.bounce_strength = 0.0005,
 		.particle_cnt = 200,
 		.num_ptypes = 100,
 
-		.frame_cnt = 1500,
-		.fps = 60,
-		.video_cnt = 300,
+		.frame_cnt = 3000,
+		.fps = 6,
+		.video_cnt = 250,
 	};
 
 	strncpy(out_dir, "./out/ds", 256);
