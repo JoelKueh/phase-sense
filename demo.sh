@@ -1,15 +1,16 @@
 
-read -p </dev/tty
 cd ./dtwin
 make
 ./bin/dtwin -p ./params.toml
 mpv ./out/ds/0.avi
 cd ..
 
-read -p </dev/tty
-python ./baseline/baseline.py dtwin/out/ds/0.avi
+read -p "Press ENTER to continue" </dev/tty
+cd ./baseline
+python ./baseline.py ../dtwin/out/ds/0.avi
+cd ..
 
-read -p </dev/tty
+read -p "Press ENTER to continue" </dev/tty
 cd ./tcn
 python ./test-single.py
 cd ..

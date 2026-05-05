@@ -64,8 +64,8 @@ def cluster_detection(processed_frame):
         avg_cluster_size = 0
     
     # DEBUGGING: Show clusters and video feed
-    cv.imshow("Clusters", output)
-    cv.imshow("Video", frame)
+    # cv.imshow("Clusters", output)
+    # cv.imshow("Video", frame)
 
     return avg_cluster_size
 
@@ -114,10 +114,10 @@ if __name__ == "__main__":
     else: # Filepath parsing
         video_path = sys.argv[1]
         path_parts = video_path.split('/')
+        dir_path = '/'.join(path_parts[0:-1])
         filename_parts = path_parts[len(path_parts) - 1].split(".")
-        filename = filename_parts[0]
-        meta_path = f"{(video_path.split('.'))[0]}.meta"
-
+        filename = '.'.join(filename_parts[0:-1])
+        meta_path = f"{dir_path}/{filename}.meta"
 
     cap = cv.VideoCapture(video_path) # Open video file
     if not cap.isOpened():
