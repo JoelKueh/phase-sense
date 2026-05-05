@@ -1,5 +1,5 @@
 import csv
-
+import time
 import cv2 as cv
 import numpy as np
 import sys
@@ -64,12 +64,14 @@ def cluster_detection(processed_frame):
         avg_cluster_size = 0
     
     # DEBUGGING: Show clusters and video feed
-    # cv.imshow("Clusters", output)
-    # cv.imshow("Video", frame)
+    cv.imshow("Clusters", output)
+    cv.moveWindow("Clusters", 0, 0)
+    cv.imshow("Video", frame)
+    cv.moveWindow("Video", 400, 0)
 
     return avg_cluster_size
 
-# Outputs results to output directory, returns cumulative error and onset error for csv output
+# Outputs results to output directory, returns cumulative error and onset  rror for csv output
 def output_results(avg_array, num_frames, onset, filename, meta_path): # Output plot of predicted vs actual, abs error plot, sum of abs errors returned
     Path(f"{OUTDIR}/{filename}/").mkdir(parents=True, exist_ok=True)
     meta_curve = load_meta(meta_path)
@@ -86,7 +88,7 @@ def output_results(avg_array, num_frames, onset, filename, meta_path): # Output 
     plot.title("Predicted vs Actual Emergence Indicies Over Time")
     plot.legend()
     plot.savefig(f'{OUTDIR}/{filename}/{filename}_predvact.png')
-    plot.show()
+    # plot.show() # DEBUGGING: Show plots, can be commented out for faster runs
     plot.clf()
     cum_error = cumulative_error(norm_pred, norm_act)
     abs_error = [abs(norm_pred[i] - norm_act[i]) for i in range(len(norm_pred))]
@@ -99,13 +101,10 @@ def output_results(avg_array, num_frames, onset, filename, meta_path): # Output 
     plot.title("Absolute Error in Emergence Index Prediction")
     plot.legend()
     plot.savefig(f'{OUTDIR}/{filename}/{filename}_abserror.png')
-    plot.show()
+    # plot.show() # DEBUGGING: Show plots, can be commented out for faster runs
     plot.clf()
 
     return cum_error, onset_error
-
-
-
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -129,6 +128,7 @@ if __name__ == "__main__":
     onset_time = 0
     frame_count = 0
     while True:
+        # time.sleep(1/15) # DEBUGGING: Limit to 15 FPS for visualization
         if not paused:
             ret, frame = cap.read()
             if not ret:
@@ -145,7 +145,9 @@ if __name__ == "__main__":
                 start_level = np.mean(averages[0:9])
         key = cv.waitKey(1) & 0xFF
         if key == ord('q'):
-            break
+            cap.release()
+            cv.destroyAllWindows()
+            sys.exit(0)
         elif key == ord(' '):
             paused = not paused
     for i in range(0, 13):

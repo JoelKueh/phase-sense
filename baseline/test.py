@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 import argparse
 
-FORMAT = "mp4" # Change this to the video format you are using (e.g., "avi", "mp4", etc.)
+FORMAT = "avi" # Change this to the video format you are using (e.g., "avi", "mp4", etc.)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("directory", help="Directory to count files in")
@@ -22,4 +22,4 @@ print(f"Found {num_files} files → running baseline.py {runs} times")
 
 for i in range(runs):
     print(f"Run {i+1}/{runs}")
-    subprocess.run(["python3", "baseline.py", f"{dir_path}/{i}.{FORMAT}"], check=True)
+    subprocess.run(["python3", "baseline/baseline.py", f"{dir_path}/{i}.{FORMAT}"], check=True)
