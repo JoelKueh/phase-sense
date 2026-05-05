@@ -13,9 +13,8 @@ This project has 4 main dependencies:
 3. Compiler that meets the C23 standard with the #embed preprocessor directive
   - If your C compiler does not support C23, try [zig-cc](https://andrewkelley.me/post/zig-cc-powerful-drop-in-replacement-gcc-clang.html)
 4. Runtime executalbe of ffmpeg added to the PATH
-  - Packeged (and likely already installed) on most systems
-  - Binaries are avaliable on the [FFMPEG website](https://www.ffmpeg.org/download.html)
-  - This MUST have the libx264 encoder!
+  - Packaged (and likely already installed) on most systems
+  - Binaries are available on the [FFMPEG website](https://www.ffmpeg.org/download.html)
 
 ## Design Philosophy
 
@@ -36,51 +35,74 @@ The positions, velocities, and rotations of the particles are passed to the rend
 
 ```c
 typedef struct {
-	float px;
-	float py;
-	float vx;
-	float vy;
-	float rotation;
+	vec2 pos;
+	vec2 vel;
+	float rot;
+	float rvel;
 	int type;
+	float intensity;
 } particle_t;
 ```
 
-The simulator backend outputs a .meta file that is associated with the video. The .meta file uses the CSV format. The first line of the .meta file is a header with information about the name, real-time framerate, particle count, and resolution of the simulated video. This header is followed by a series of rows that hold the simulation time and emergence-index for each frame.
+The simulator backend outputs a .meta file that is associated with the video. The .meta file uses the CSV format. The first line of the .meta file is a header with information about the parameters of the simulation. This header is followed by a series of rows that hold the simulation frame and emergence-index for each frame.
 
 For example, the following .meta file describes a simulation video named simulation_1.mp4. This simulation contains 1280x720 timelapse footage with a framerate of 1 frame every four seconds.
 
 ```
-simulation_1.mp4,0.25,1280x720
-0,0.001
-4,0.004
-8,0.020
-12,0.100
+aggr_prob,0.732320,avg_len,0.421229,accel,0.125950,drag,0.168514,scale,0.200000,count,122
+0,1.000000
+1,1.000000
+2,1.000000
 ...
 ```
   
 ### Rendering Front End
 
-The rendering frontend renders frames based on the particle data supplied by the backend. The rendering front end consists of the following phases:
+The rendering frontend renders frames based on the particle data supplied by the backend. The rendering uses the following rendering techniques:
 
-1. Particle Instantiation
-  - Uses a geometry shader to instantiate particles provided their positions.
-  - Particles are defined by their "spine" (strip of line segments) and a radius.
-  - The way the particles manipulate light is modeled by a function on the distance from the spine.
-  - Velocity data is encoded in a velocity buffer to be used later.
-2. Motion Blur
-  - Motion blur is applied to the whole image using the velocity buffer.
+- Uses a geometry shader to instantiate particles provided their positions.
+- Particles are defined by their "spine" (strip of line segments) and a radius.
+- The way the particles manipulate light is modeled by a function on the distance from the spine.
+- Velocity data is encoded in a velocity buffer to be used later.
 
 The rendering front end copies the rendered frames back to the CPU and writes them over a pipe to ffmpeg.
 
-## TODO
+## Running
 
-1. Random blurring for focus changes in microscope.
-~2. Particles have associated intensity value.~
-~3. Non-uniform particle lengths.~
-~4. Particles shapes should be more smooth (fewer points and only slight curve).~
-~4. Hitboxes should be accurate to the actual particle.~
-  ~- Add radius for small particles~
-5. Motion blur.
-6. Particle bounce-off should be velocity aware.
-~7. Fix problem with poor quality compression~
-  - NOTE: Do this by having libx264 instead of libopenh264 for ffmpeg, way better.
+### Output
+
+The pipeline will output simulation data to `./out/ds` in a list of `.meta` and `.avi` files.
+
+### Parameter Tuning
+
+All parameters in the simulator are tunable via a `.toml` file.
+
+Command
+```
+./bin/dtwin -p ./params.toml
+```
+
+params.toml
+```
+scale = 0.15
+res = 380
+pre_onset_aggr = 0.0
+post_onset_aggr = 0.3
+onset_prob = 0.0025
+particle_roughness = 0.05
+particle_min_len = 0.01
+particle_max_len = 0.8
+particle_min_intensity = 0.5
+particle_max_intensity = 1.5
+accel_distr_mu = 0.0
+accel_distr_sig = 0.1
+raccel_distr_mu = 0.0
+raccel_distr_sig = 0.3
+drag_coeff = 0.1
+bounce_strength = 0.0005
+particle_cnt = 200
+num_ptypes = 100
+frame_cnt = 3000
+fps = 6
+video_cnt = 1
+```
