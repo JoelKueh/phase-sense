@@ -1,20 +1,15 @@
 #pragma once
 
+#include "param.h"
+#include "nbody.h"
 #include "glad/glad.h"
-#include <glm/glm.hpp>
 #include <stdlib.h>
+#define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_GLX
 #include <GLFW/glfw3.h>
-
-// TODO: Should not be an array of structs. Want struct of attribute buffers.
-// TODO: Move me to somewhere shared by cuda and OpenGL
-/*
-typedef struct {
-    glm::vec2 position;
-    glm::vec2 velocity;
-    GLfloat rotation;
-    GLint type;
-} particle_t;
-*/
+#include <GLFW/glfw3native.h>
+#include <GL/glx.h>
+#include <EGL/egl.h>
 
 typedef struct {
     int pid;
@@ -24,19 +19,23 @@ typedef struct {
 typedef struct {
     ffmpeg_handle_t h_ffmpeg;
     uint8_t *ffmpeg_buf;
-    uint32_t res_x;
-    uint32_t res_y;
+    params_t *params;
+    spine_t *spines;
 
-    // GLFW context
+    // GLFW context and buffer outputs
     GLFWwindow *window;
+    GLuint inst_frame_buf;
+    GLuint inst_out_tex;
+    GLuint inst_vel_tex;
+    GLuint draw_frame_bufs[2];
+    GLuint draw_out_texs[2];
 
     // Particle attriube buffers
     GLuint particle_vao;     // Particle vertex array object.
     GLuint particle_vbo;     // Particle vertex buffer object.
-    GLuint particle_pos;     // Probably a ubo window to the vao.
-    GLuint particle_vel;     // Particle velocities.
-    GLuint particle_types;   // Particle types.
+    GLuint particle_ssbo;    // Particle shader storage buffer object.
     GLuint particle_tree;    // Particle quad tree?
+    GLuint empty_vao;        // Empty vao for a fullscreen quad.
 
     // First pass: Take input particle positions and pass them to the geometry
     // shader to create vertices along the particle boundaries.
@@ -56,8 +55,7 @@ typedef struct {
  * @param context A renderer context that can be used later.
  * @return 0 on success or -1 on error.
  */
-int render_init(render_context_t *context,
-                uint32_t res_x, uint32_t res_y);
+int render_init(render_context_t *context, params_t *params, spine_t *spines);
 
 /**
  * @brief Initializes the render pipeline to feed data to out_path.

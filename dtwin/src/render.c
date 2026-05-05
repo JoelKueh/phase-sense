@@ -1,0 +1,400 @@
+
+#include "render.h"
+#include "nbody.h"
+#include "glad/glad.h"
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <GLFW/glfw3.h>
+
+const char *FFMPEG_PATH = "ffmpeg";
+
+// Shader definitions in src/shaders.cpp created by xxd
+extern const char inst_vert_glsl[];
+extern const char inst_geom_glsl[];
+extern const char inst_frag_glsl[];
+extern const char quad_vert_glsl[];
+extern const char gaus_frag_glsl[];
+
+extern const unsigned int inst_vert_glsl_len;
+extern const unsigned int inst_geom_glsl_len;
+extern const unsigned int inst_frag_glsl_len;
+extern const unsigned int quad_vert_glsl_len;
+extern const unsigned int gaus_frag_glsl_len;
+
+static void glfw_error_callback(int error, const char *description) {
+    fprintf(stderr, "Error: %s\n", description);
+}
+
+int ffmpeg_open(ffmpeg_handle_t *handle, const char *const resolution,
+                const char *const fname, const char *const fps) {
+    // Open the pipe for streaming data to ffmepg
+    if (pipe(handle->pipefds)) {
+        perror("pipe");
+        return -1;
+    }
+
+    // Spawn the ffmpeg subprocess.
+    handle->pid = fork();
+    if (handle->pid == -1) {
+        close(handle->pipefds[0]);
+        close(handle->pipefds[1]);
+        perror("fork");
+        return -1;
+    } else if (handle->pid == 0) {
+        close(handle->pipefds[1]);
+        dup2(handle->pipefds[0], STDIN_FILENO);
+        execlp(FFMPEG_PATH, FFMPEG_PATH, "-loglevel", "error", "-f", "rawvideo", "-pix_fmt",
+               "rgba", "-framerate", fps, "-s", resolution, "-i", "-", "-vcodec", "mjpeg",
+               "-vf", "format=gray", "-q:v", "3", "-an", "-y", fname, NULL);
+        perror("execlp");
+        fprintf(stderr, "Is ffmpeg in the path?\n");
+        exit(-1);
+    } else {
+        close(handle->pipefds[0]);
+        return 0;
+    }
+}
+
+int ffmpeg_write(ffmpeg_handle_t *handle, void *const buf, size_t sz) {
+    if (sz != write(handle->pipefds[1], buf, sz)) {
+        perror("write");
+        return -1;
+    }
+    return 0;
+}
+
+int ffmpeg_close(ffmpeg_handle_t *handle) {
+    int status;
+
+    close(handle->pipefds[1]);
+    if (waitpid(handle->pid, &status, 0) == -1) {
+        perror("waitpid");
+        return -1;
+    }
+
+    if (status != 0) {
+        fprintf(stderr, "ffmpeg had non-zero exit code\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+int compile_shader_program(GLuint *program,
+                           const char vert_src[], int vert_len,
+                           const char geom_src[], int geom_len,
+                           const char frag_src[], int frag_len) {
+    int result = 0;
+    int success;
+    char info_log[512];
+
+    GLuint vert_shader;
+    GLuint geom_shader;
+    GLuint frag_shader;
+
+    // Create the vertex shader
+    vert_shader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vert_shader, 1, &vert_src, &vert_len);
+	glCompileShader(vert_shader);
+	glGetShaderiv(vert_shader, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		glGetShaderInfoLog(vert_shader, 512, NULL, info_log);
+		fprintf(stderr, "vert_shader compile failed\n%s", info_log);
+		result = -1;
+		goto out;
+	}
+
+	// Create the geometry shader
+	if (geom_src != NULL) {
+        geom_shader = glCreateShader(GL_GEOMETRY_SHADER);
+	    glShaderSource(geom_shader, 1, &geom_src, &geom_len);
+	    glCompileShader(geom_shader);
+	    glGetShaderiv(geom_shader, GL_COMPILE_STATUS, &success);
+	    if (!success) {
+	    	glGetShaderInfoLog(geom_shader, 512, NULL, info_log);
+	    	fprintf(stderr, "geom_shader compile failed\n%s", info_log);
+	    	result = -1;
+	    	goto out_delete_vert;
+	    }
+	}
+
+	// Create the fragment shader
+	frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(frag_shader, 1, &frag_src, &frag_len);
+	glCompileShader(frag_shader);
+	glGetShaderiv(frag_shader, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		glGetShaderInfoLog(frag_shader, 512, NULL, info_log);
+		fprintf(stderr, "frag_shader compile failed\n%s", info_log);
+		result = -1;
+		goto out_delete_geom;
+	}
+
+	// Link the shaders into the shader program
+	if ((*program = glCreateProgram()) == 0) {
+	    fprintf(stderr, "glCreateProgram: failed");
+	    result = -1;
+	    goto out_delete_frag;
+	}
+	glAttachShader(*program, vert_shader);
+	if (geom_src != NULL)
+	    glAttachShader(*program, geom_shader);
+	glAttachShader(*program, frag_shader);
+	glLinkProgram(*program);
+
+	// Check for errors in the link stage
+	glGetProgramiv(*program, GL_LINK_STATUS, &success);
+	if (!success) {
+	    glGetProgramInfoLog(*program, 512, NULL, info_log);
+	    fprintf(stderr, "program link failed\n%s", info_log);
+	    result = -1;
+	    goto out_delete_frag;
+	}
+
+out_delete_frag:
+    glDeleteShader(frag_shader);
+out_delete_geom:
+    if (geom_src != NULL)
+        glDeleteShader(geom_shader);
+out_delete_vert:
+    glDeleteShader(vert_shader);
+
+out:
+    return result;
+}
+
+int render_init(render_context_t *context, params_t *params, spine_t *spines) {
+    const GLenum inst_buffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    const GLenum draw_buffers[2] = {GL_COLOR_ATTACHMENT0};
+    int result = 0;
+
+    // Pass the parameter struct into the context
+    context->params = params;
+    context->spines = spines;
+
+    // Create the GLFW context with no no visible window.
+    glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
+    if (!glfwInit()) {
+        fprintf(stderr, "error creating glfw context\n");
+        goto err;
+    }
+    glfwSetErrorCallback(glfw_error_callback);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    context->window = glfwCreateWindow(params->res, params->res, "phase-sense", NULL, NULL);
+    if (!context->window) {
+        fprintf(stderr, "error creating glfw window\n");
+        goto err_close_glfw;
+    }
+    glfwMakeContextCurrent(context->window);
+    gladLoadGL();
+
+    // Create the particle instantiation output texture
+    glGenTextures(1, &context->inst_out_tex);
+    glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, context->params->res, context->params->res,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glClampColor(GL_CLAMP_FRAGMENT_COLOR, GL_FALSE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+    // Create the particle instantiation velocity texture
+    glGenTextures(1, &context->inst_vel_tex);
+    glBindTexture(GL_TEXTURE_2D, context->inst_vel_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, context->params->res, context->params->res,
+                 0, GL_RG, GL_HALF_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+    // Create the particle instantiation framebuffer
+    glGenFramebuffers(1, &context->inst_frame_buf);
+    glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
+    glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
+    glBindTexture(GL_TEXTURE_2D, context->inst_vel_tex);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, context->inst_out_tex, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, context->inst_vel_tex, 0);
+    glDrawBuffers(2, inst_buffers);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        fprintf(stderr, "error creating particle instantiation framebuffer\n");
+        goto err_close_glfw;
+    }
+
+    // Create the draw output texture
+    glGenTextures(2, context->draw_out_texs);
+    for (int i = 0; i < 2; i++) {
+        glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, context->params->res, context->params->res,
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    }
+
+    // Create the draw framebuffer
+    glGenFramebuffers(2, context->draw_frame_bufs);
+    for (int i = 0; i < 2; i++) {
+        glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[i]);
+        glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[i]);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, context->draw_out_texs[i], 0);
+        glDrawBuffers(1, draw_buffers);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            fprintf(stderr, "error creating draw framebuffers\n");
+            goto err_close_glfw;
+        }
+    }
+
+    // PASS 1: Geometry Shader
+    glGenVertexArrays(1, &context->particle_vao);
+    glGenBuffers(1, &context->particle_vbo);
+    glBindVertexArray(context->particle_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, context->particle_vbo);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, pos));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, vel));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, rot));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, rvel));
+    glEnableVertexAttribArray(4);
+    glVertexAttribIPointer(4, 1, GL_INT, sizeof(particle_t),
+                           (GLvoid*)offsetof(particle_t, type));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(particle_t),
+                          (GLvoid*)offsetof(particle_t, intensity));
+
+    glGenBuffers(1, &context->particle_ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, context->particle_ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, context->params->num_ptypes * sizeof(spine_t),
+                 context->spines, GL_STATIC_DRAW);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    
+    if (compile_shader_program(&context->particle_program,
+                               inst_vert_glsl, inst_vert_glsl_len,
+                               inst_geom_glsl, inst_geom_glsl_len,
+                               inst_frag_glsl, inst_frag_glsl_len)) {
+        goto err_close_glfw;
+    }
+
+    // PASS 2: Blurring Kernel
+    glGenVertexArrays(1, &context->empty_vao);
+    if (compile_shader_program(&context->psf_program,
+                               quad_vert_glsl, quad_vert_glsl_len,
+                               NULL, 0,
+                               gaus_frag_glsl, gaus_frag_glsl_len)) {
+        goto err_close_glfw;
+    }
+
+    // Do not terminate glfw on success
+    goto out;
+
+err_close_glfw:
+    glfwTerminate();
+err:
+    result = -1;
+
+out:
+    return 0;
+}
+
+int render_open_output(render_context_t *context, const char fname[]) {
+    char res_buf[16] = "";
+    char fps_buf[16] = "";
+
+    if ((context->ffmpeg_buf =
+            (uint8_t*)malloc(context->params->res * context->params->res * 4)) == 0)
+        return -1;
+
+    snprintf(res_buf, sizeof(res_buf), "%dx%d",
+             context->params->res, context->params->res);
+    snprintf(fps_buf, sizeof(res_buf), "%d", context->params->fps);
+    if (ffmpeg_open(&context->h_ffmpeg, res_buf, fname, fps_buf) == -1)
+        return -1;
+
+    return 0;
+}
+
+int render_close_output(render_context_t *context) {
+    free(context->ffmpeg_buf);
+    return ffmpeg_close(&context->h_ffmpeg);
+}
+
+int render_frame(render_context_t *context) {
+    GLuint loc_resolution, loc_radius, loc_dir, loc_scale;
+    
+    // Prepare the rendering buffer.
+    glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
+    glViewport(0, 0, context->params->res, context->params->res);
+    // glClearColor(0.318f, 0.314f, 0.0f, 1.0f);
+    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // PASS 1: Particle instantiation
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glUseProgram(context->particle_program);
+    loc_scale = glGetUniformLocation(context->particle_program, "scale");
+    glUniform1f(loc_scale, context->params->scale);
+    glBindVertexArray(context->particle_vao);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, context->particle_ssbo);
+    glDrawArrays(GL_POINTS, 0, context->params->particle_cnt);
+    glDisable(GL_BLEND);
+
+    // PASS 2: Horrizontal PSF Blurring (SPLIT ONLY WORKS BECAUSE GAUSIAN)
+    // glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[0]);
+    // glViewport(0, 0, context->res, context->res);
+    // glClear(GL_COLOR_BUFFER_BIT);
+    // glUseProgram(context->psf_program);
+    // loc_resolution = glGetUniformLocation(context->psf_program, "resolution");
+    // loc_radius = glGetUniformLocation(context->psf_program, "radius");
+    // loc_dir = glGetUniformLocation(context->psf_program, "dir");
+    // glUniform1f(loc_resolution, context->res_x);
+    // glUniform1f(loc_radius, 5);
+    // glUniform2f(loc_dir, 1.0, 0.0);
+    // glBindTexture(GL_TEXTURE_2D, context->inst_out_tex);
+    // glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    // PASS 3: Vertical PSF Blurring
+    // glBindFramebuffer(GL_FRAMEBUFFER, context->draw_frame_bufs[1]);
+    // glViewport(0, 0, context->res, context->res);
+    // glClear(GL_COLOR_BUFFER_BIT);
+    // glUniform2f(loc_dir, 0.0, 1.0);
+    // glBindTexture(GL_TEXTURE_2D, context->draw_out_texs[0]);
+    // glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    // Read the buffer back from the GPU and write it to ffmpeg.
+    // glBindFramebuffer(GL_FRAMEBUFFER, context->inst_frame_buf);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glFinish();
+    memset(context->ffmpeg_buf, 0xFF, context->params->res * context->params->res * 4);
+    glReadPixels(0, 0, context->params->res, context->params->res, GL_RGBA,
+                 GL_UNSIGNED_BYTE, context->ffmpeg_buf);
+    if (ffmpeg_write(&context->h_ffmpeg, context->ffmpeg_buf,
+                     context->params->res * context->params->res * 4) == -1)
+        return -1;
+
+    return 0;
+}
+
+void render_deinit(render_context_t *context) {
+    glfwTerminate();
+}
