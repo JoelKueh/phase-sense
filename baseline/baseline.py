@@ -41,7 +41,7 @@ def frame_processing(frame):
     gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     gray = cv.GaussianBlur(gray, (21, 21), 1.0)
     edges = cv.Canny(gray, 40, 100)
-    closing = cv.morphologyEx(edges, cv.MORPH_CLOSE, np.ones((3, 3), np.uint8), iterations=1) #CHANGE1a: Not dilating and using 1 closing
+    closing = cv.morphologyEx(edges, cv.MORPH_CLOSE, np.ones((3, 3), np.uint8), iterations=1)
 
     return closing
 
@@ -140,7 +140,7 @@ if __name__ == "__main__":
             if (start_level != 0 and onset_time == 0): # Set onset time once only
                 if (avg_cluster_size >= (1.15 * start_level)): # Onset detected when average cluster size exceeds 115% of start level
                     onset_time = frame_count
-                    print(f"Onset started at: {frame_count}")
+                    print(f"Onset started at: {frame_count}") # Live detectiong of the onset time, warning printed in terminal.
             if (frame_count == 10): # Set start level as the average of the first 10 frames
                 start_level = np.mean(averages[0:9])
         key = cv.waitKey(1) & 0xFF
