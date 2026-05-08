@@ -20,7 +20,6 @@ import matplotlib.pyplot as plt
 
 import cv2
 import os
-import zipfile
 
 real_video_paths = [
     "/content/Real-Time-MicroVids/aggregation_of_silica_spheres.avi", # Change these to your actual file names
@@ -236,5 +235,3 @@ for i in range(250):
     plt.savefig(f"fig{i}.png")
     plt.clf()
     
-
-

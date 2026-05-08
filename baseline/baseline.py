@@ -29,6 +29,9 @@ def minmax(arr):
     arr_max = np.max(arr)
     return (arr - arr_min) / (arr_max - arr_min)
 
+def avgnormal(arr):
+    return arr / np.average(arr)
+
 # Helper to calculate cumulative error between predicted and actual curves
 def cumulative_error(pred, act):
     sum = 0
@@ -64,10 +67,10 @@ def cluster_detection(processed_frame):
         avg_cluster_size = 0
     
     # DEBUGGING: Show clusters and video feed
-    cv.imshow("Clusters", output)
-    cv.moveWindow("Clusters", 0, 0)
-    cv.imshow("Video", frame)
-    cv.moveWindow("Video", 400, 0)
+    # cv.imshow("Clusters", output)
+    # cv.moveWindow("Clusters", 0, 0)
+    # cv.imshow("Video", frame)
+    # cv.moveWindow("Video", 400, 0)
 
     return avg_cluster_size
 
@@ -76,8 +79,17 @@ def output_results(avg_array, num_frames, onset, filename, meta_path): # Output 
     Path(f"{OUTDIR}/{filename}/").mkdir(parents=True, exist_ok=True)
     meta_curve = load_meta(meta_path)
     meta_onset = find_meta_onset(meta_curve)
-    norm_act = minmax(meta_curve)
-    norm_pred = minmax(avg_array)
+    if np.max(meta_curve) == np.min(meta_curve):
+        norm_act = avgnormal(meta_curve)
+        norm_pred = avgnormal(avg_array)
+    else:
+        norm_act = minmax(meta_curve)
+        norm_pred = minmax(avg_array)
+
+    # Create a csv with the data for the curve
+    with open(f"{OUTDIR}/{filename}/curve.csv", "w") as f:
+        for i, val in enumerate(avg_array):
+            print(f"{i},{val}", file=f)
 
     # Predicted vs Actual Plot
     plot.plot(range(0,len(norm_act)),norm_act, color = "blue", label = "actual")

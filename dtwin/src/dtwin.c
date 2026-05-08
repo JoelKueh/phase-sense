@@ -305,7 +305,7 @@ int handle_args(int argc, char **argv, char *out_dir, params_t *sim_params)
 
 		.pre_onset_aggr = 0.0,
 		.post_onset_aggr = 0.3,
-		.onset_prob = 0.0025,
+		.onset_prob = 0.0015,
 
 		.particle_roughness = 0.05,
 		.particle_min_len = 0.01,
