@@ -47,6 +47,18 @@ def load_meta(meta_path, seq_len):
     return curve.squeeze()
 
 
+# Gets a parameter from a metadata file at the given path
+def meta_get_param(meta_path, param_name):
+    with open(meta_path, 'r') as f:
+        parts = f.readline().strip().split(',')
+    parts = [p.strip() for p in parts]
+
+    for i in range(0, len(parts), 2):
+        if parts[i] == param_name:
+            return torch.tensor(np.float32(parts[i+1]))
+    return None
+
+
 # Turns an emergence index sequence into an onset chain
 def dtwin_onset_post_processing(curve):
     new = [1.0 if x > 1.00001 else 0.0 for x in curve]
@@ -92,7 +104,7 @@ class SlidingWindow(Dataset):
         return frames, target
 
 
-class FullVideo(Dataset):
+class FullVideoCurve(Dataset):
     def __init__(self, indices, seq_len, width, height, transform,
                  data_dir, curve_post_processing):
         self.transform = transform
@@ -122,6 +134,35 @@ class FullVideo(Dataset):
         if self.transform:
             frames = self.transform(frames)
         return frames, curve
+
+
+class FullVideoSingle(Dataset):
+    def __init__(self, indices, seq_len, width, height, transform, data_dir, param_name):
+        self.transform = transform
+        self.seq_len = seq_len
+        self.width = width
+        self.height = height
+        self.data_dir = data_dir
+        self.len = len(indices)
+        self.data = []
+
+        for i in tqdm(range(len(indices))):
+            idx = indices[i]
+            video_path = os.path.join(self.data_dir, f"{idx}.avi")
+            meta_path = os.path.join(self.data_dir, f"{idx}.meta")
+
+            frames = frames_extraction(video_path, self.seq_len, self.width, self.height)
+            target = meta_get_param(meta_path, param_name)
+            self.data.append((frames, target))
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, idx):
+        frames, target = self.data[idx]
+        if self.transform:
+            frames = self.transform(frames)
+        return frames, target
 
 
 ## Data Comparison Utilities

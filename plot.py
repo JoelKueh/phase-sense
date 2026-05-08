@@ -67,11 +67,11 @@ ax.legend()
 plt.savefig(f"{OUTPUT_DIR}/result_onset_error.png", pad_inches=0)
 plt.clf()
 
-mask_ml = data_ml[2] < 15
-filt_ml = data_ml[2][mask_ml]
-mask_base = data_base[2] < 15
+mask_ml = np.abs(data_onset_ml[2]) < 30
+filt_ml = data_onset_ml[2][mask_ml]
+mask_base = np.abs(data_base[2]) < 30
 filt_base = data_base[2][mask_base]
-print("Average ML Onset Error: ", np.average(np.abs(data_ml[2])))
+print("Average ML Onset Error: ", np.average(np.abs(data_onset_ml[2])))
 print("Average Base Onset Error: ", np.average(np.abs(data_base[2])))
 print("ML Prediction Accuracy: ", len(filt_ml) / len(data_ml[2]))
 print("Base Prediction Accuracy: ", len(filt_base) / len(data_base[2]))
