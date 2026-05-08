@@ -55,7 +55,7 @@ ax.set_ylabel("Normalized Emergence Index")
 plt.savefig(f"{OUTPUT_DIR}/result_norm.png", pad_inches=0)
 plt.clf()
 
-w=4.0
+w=1.5
 fig,ax = plt.subplots(figsize=fs)
 ax.set_title("Onset Estimate Error")
 counts, bins = np.histogram(data_onset_ml[2], bins=50)
