@@ -19,6 +19,7 @@ DATA_BASE = './baseline/baseline_output/results.csv'
 CURVE_ACTUAL = f'{DS_DEST}/ds/31.meta'
 CURVE_ML = './pytorch/output/tcn_eidx/curves/31.csv'
 CURVE_BASE = './baseline/baseline_output/31/curve.csv'
+ACCEL_ML = './pytorch/output/lstm_accel/results.csv'
 
 
 def minmax(arr):
@@ -41,6 +42,7 @@ curve_actual = np.transpose(np.loadtxt(CURVE_ACTUAL, delimiter=',', skiprows=1))
 curve_ml = np.transpose(np.loadtxt(CURVE_ML, delimiter=',', skiprows=0))
 curve_cv = np.loadtxt(CURVE_BASE, delimiter=',', skiprows=0)
 curve_cv = np.transpose(curve_cv)
+accel_ml = np.transpose(np.loadtxt(ACCEL_ML, delimiter=',', skiprows=0))
 
 scale = 0.35
 fs = [24 * scale, 11 * scale]
@@ -89,3 +91,14 @@ plt.clf()
 print("Average ML Cumulative Error: ", np.average(np.abs(data_ml[1])))
 print("Average Base Cumulative Error: ", np.average(np.abs(data_base[1])))
 
+w=0.002
+fig,ax = plt.subplots(figsize=fs)
+ax.set_title("Acceleration Error")
+counts, bins = np.histogram(accel_ml[1] - accel_ml[2], bins=50)
+ax.bar(bins[:-1]-w/2, counts, width=w)
+ax.set_xlabel("Units Per Timestep")
+ax.legend()
+plt.savefig(f"{OUTPUT_DIR}/accel_error.png", pad_inches=0)
+plt.clf()
+print("Average ML Acceleration Error: ", np.average(np.abs(accel_ml[1] - accel_ml[2])))
+print("Average Acceleration: ", np.average(accel_ml[2]))

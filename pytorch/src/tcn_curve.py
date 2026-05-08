@@ -146,4 +146,3 @@ def eval(data_dir, weights_file, output_dir, curve_post_processing, act_thresh, 
             for i, val in enumerate(pred):
                 print(f"{3*(i + WINDOW_SIZE - 1)},{val}", file=curvef)
         plt.clf()
-    close(f)

@@ -107,12 +107,11 @@ def predict_param(model, video_path):
     if frames is None:
         return None
 
-    predictions = []
     with torch.no_grad():
         input_tensor = frames.unsqueeze(0).to(device)
         pred = model(input_tensor)
-        predictions.append(pred.item())
-    return np.array(predictions)
+        return pred.item()
+    return None
     
 
 # Evaluate the LSTM
@@ -133,4 +132,3 @@ def eval(data_dir, weights_file, output_dir, param_name):
         target = target.numpy()
         pred = predict_param(model, f"{file_path}.avi")
         print(f"{i},{target},{pred}",file=f, flush=True)
-    close(f)
